@@ -128,3 +128,47 @@ dams_snapped_reduced_joined <- dams_snapped_reduced %>%
   ungroup()
 
 ?st_equals
+
+
+headwaters_checking <- headwaters_dam(dams_snapped_reduced_joined, shape_river_simple)
+head(headwaters_checking$flag_headwater)
+
+# Create junction point shapefile
+network_links <- rbind(
+  dams_snapped_reduced_joined %>% 
+    mutate(type = "dam", id_barrier = id_dam) %>%
+    dplyr::select(type, id_barrier, pass_u, pass_d),
+  river_joins %>% mutate(type = "joint") %>%
+    dplyr::select(type) %>%
+    mutate(id_barrier = NA, pass_u = NA, pass_d = NA) %>%
+    rename(geometry = x)) %>%
+  mutate(id_links = 1:nrow(.))
+
+# Split river network
+river_net_simplified <- lwgeom::st_split(shape_river_simple, network_links) %>%
+  st_collection_extract(.,"LINESTRING") %>%
+  data.frame(NodeID = 1:length(.), geometry = .) %>%
+  st_as_sf() %>%
+  mutate(length = st_length(.)) %>%
+  st_join(., shape_river_small, join = st_is_within_distance, dist = 0.01 ) %>% 
+  group_by(NodeID) %>%
+  slice(which.max(UPLAND_SKM)) %>% 
+  ungroup()
+
+
+ggplot() +
+  coord_fixed() +
+  ggspatial::layer_spatial(river_net_simplified, color = "gray70")+
+  ggspatial::layer_spatial(network_links, aes(shape = type))+
+  scale_shape_manual(name = "Splitting points", values=c("dam" =17,"joint" = 23))+
+  theme_minimal() +
+  theme(legend.position = "bottom")+
+  ggspatial::annotation_north_arrow(location = "br")+
+  ggspatial::annotation_scale(location = "bl", style = "ticks")
+
+confluences <- multiple_confluences(river_net_simplified)
+head(confluences)
+
+
+shp_check <- check_components(network_links, river_net_simplified)
+head(shp_check)
