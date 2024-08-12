@@ -103,6 +103,7 @@ ggplot() +
 dams_snapped <- snap_to_river(dams_to_points,
                               shape_river_simple %>% st_sf(),
                               max_dist = 1000)
+
 # Retain dams that were snapped
 dams_snapped_reduced <-
   dams_snapped[st_contains(shape_river_simple %>% st_sf(), dams_snapped, prepared = FALSE)[[1]],]
