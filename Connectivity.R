@@ -19,13 +19,19 @@ library("shp2graph")
 library(ggrepel)
 
 
-shape_river <- st_read("Nethravathi/Nethravathi_river.shp")
-shape_basin <- st_read("Nethravathi/Nethravathi_wshed.shp")
-shape_dams <- st_read("Nethravathi/Nethravathi_SHPs.shp")
+#shape_river <- st_read("Nethravathi/Nethravathi_river.shp")
+#shape_basin <- st_read("Nethravathi/Nethravathi_wshed.shp")
+#shape_dams <- st_read("Nethravathi/Nethravathi_SHPs.shp")
 
+?st_read
 #shape_river <- st_read("Kaveri/Kaveri_river.shp")
-#shape_basin <- st_read("Kaveri/Kaveri_sub_basin_Karnataka_wshed.shp")
-#shape_dams <- st_read("Kaveri/Kaveri_SHPs.shp")
+shape_river <- st_read("Kaveri/Kaveri_river_v2.shp") #confluences removed
+shape_basin <- st_read("Kaveri/Kaveri_sub_basin_Karnataka_wshed.shp")
+shape_dams <- st_read("Kaveri/Kaveri_SHPs.shp")
+
+# remove irrigation canal based and offshore SHPs, and keep only stand-alone (river) and multipurpose SHPs
+shape_dams = shape_dams[shape_dams$Sitatued.o == "river" | shape_dams$Sitatued.o == "part of bigger project",]
+names(shape_dams)
 
 
 #### shape files processing ####
@@ -141,6 +147,8 @@ dams_snapped_joined <- dams_snapped_reduced %>%
   slice(which.max(UPLAND_SKM)) %>% 
   ungroup()
 
+#temp = dams_snapped_joined
+
 ggplot() +
   coord_fixed() +
   theme_minimal() +
@@ -153,8 +161,10 @@ ggplot() +
   ggspatial::annotation_scale(location = "bl", style = "ticks") +
   ggspatial::annotation_north_arrow(location = "br")
 
+dams_snapped$SL.No.[(which(dams_snapped$SL.No. %in% dams_snapped_joined$SL.No. == FALSE))]
+
 #st_write(dams_snapped, "Kaveri/dams_snapped.shp")
-#st_write(dams_snapped_reduced, "Kaveri/dams_snapped_reduced.shp")
+#st_write(dams_snapped_joined, "Kaveri/dams_snapped_joined.shp")
 
 headwaters_checking <- headwaters_dam(dams_snapped_joined, shape_river_simple)
 head(headwaters_checking$flag_headwater)
@@ -209,7 +219,7 @@ ggplot() +
 confluences <- multiple_confluences(river_net_simplified) 
 head(confluences)
 
-#st_write(confluences[confluences$flag_confluences == TRUE,], "Nethravathi/confluences.shp")
+#st_write(confluences[confluences$flag_confluences == TRUE,], "Kaveri/confluences.shp")
 
 ggplot() +
   coord_fixed() +
@@ -221,7 +231,8 @@ ggplot() +
 shp_check <- check_components(network_links, river_net_simplified)
 head(shp_check)
 
-#st_write(shp_check, "Nethravathi/shp_check.shp")
+#st_write(shp_check, "Kaveri/shp_check.shp")
+#st_write(river_net_simplified,"kaveri/river_net_simplified.shp")
 
   
 ggplot() +
@@ -272,18 +283,21 @@ ggplot() +
 ?layer_spatial
 
 #st_write(network_links, "Nethravathi/network_links.shp")
-#st_write(river_net_simplified, "Nethravathi/river_net_simplified.shp")
+#st_write(river_net_simplified, "Kaveri/river_net_simplified.shp")
 
 
-#outlet <- get_outlet(river_net_simplified, shape_basin, distance = 1)
-outlet <- river_net_simplified$NodeID[river_net_simplified$DIST_DN_KM == 0 ]
 
+#outlet <- river_net_simplified$NodeID[river_net_simplified$DIST_DN_KM == 0 ] 
+# use elevation instead of DIST_DN_KM to find the outlet because not all basins drain to the sea
+outlet <- river_net_simplified$NodeID[which(river_net_simplified$alt == min(river_net_simplified$alt))]
+
+
+
+######## create igraph object  ########
 river_graph <- create_network(network_links, river_net_simplified, outlet)
 
 plot(river_graph)
-?create_network
 
-# Check igraph object
 river_graph
 
 # check river_graph edges
@@ -315,7 +329,7 @@ index[[1]] <- index_calculation(graph = river_graph,
                                 weight = "length",
                                 c_ij_flag = TRUE,
                                 B_ij_flag = FALSE,
-                                index_type = "sum",
+                                index_type = "full",
                                 index_mode = "from")
 ?index_calculation
 

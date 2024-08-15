@@ -32,7 +32,7 @@
     </spatialrefsys>
   </crs>
   <extent>
-    <spatial maxx="0" crs="" dimensions="2" minx="0" maxy="0" minz="0" maxz="0" miny="0"/>
+    <spatial maxy="0" minx="0" maxz="0" crs="" dimensions="2" miny="0" minz="0" maxx="0"/>
     <temporal>
       <period>
         <start></start>
