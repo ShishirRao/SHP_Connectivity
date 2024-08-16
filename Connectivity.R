@@ -23,7 +23,6 @@ library(ggrepel)
 #shape_basin <- st_read("Nethravathi/Nethravathi_wshed.shp")
 #shape_dams <- st_read("Nethravathi/Nethravathi_SHPs.shp")
 
-?st_read
 #shape_river <- st_read("Kaveri/Kaveri_river.shp")
 shape_river <- st_read("Kaveri/Kaveri_river_v2.shp") #confluences removed
 shape_basin <- st_read("Kaveri/Kaveri_sub_basin_Karnataka_wshed.shp")

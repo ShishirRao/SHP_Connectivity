@@ -321,7 +321,7 @@ ggplot() +
 
 #river_net_simplified$DIST_DN_KM[river_net_simplified$NodeID == 5] = 0
 
-st_write(river_net_simplified, "test/river_net_simplified3.shp")
+#st_write(river_net_simplified, "test/river_net_simplified3.shp")
 
 
 #outlet <- get_outlet(river_net_simplified, shape_basin, distance = 1)
