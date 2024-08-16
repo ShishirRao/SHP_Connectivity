@@ -29,11 +29,18 @@ g <- split(filenames, g)
 #call function to loop through each basin
 lapply(g,collate)
 
-
 # for each basin, extract the basin name, and pass river, dam and wshed shape file to index calculation function
 collate <- function(basin_vars){
+  
   basin_name <- sub("(.+?)(\\_.*)", "\\1", basin_vars[1])
-  index_calc_wrapper(basin_name,basin_vars[1],basin_vars[2],basin_vars[3])
+  
+  # parse through file names to detect river, wshed and dam files
+  river_file = basin_vars[which(as.numeric(grepl('river', basin_vars)) == 1)]
+  wshed_file = basin_vars[which(as.numeric(grepl('wshed', basin_vars)) == 1)]
+  dams_file = basin_vars[which(as.numeric(grepl('SHPs', basin_vars)) == 1)]
+  
+  #send river, wshed and dame file names to be read and for calculating index
+  index_calc_wrapper(basin_name,river_file,dams_file,wshed_file)
 }
 
 index_calc_wrapper <- function(name, river_file, dam_file, wshed_file){  
@@ -53,26 +60,6 @@ index_calc_wrapper <- function(name, river_file, dam_file, wshed_file){
     ggspatial::annotation_scale(location = "bl", style = "ticks") +
     ggspatial::annotation_north_arrow(location = "br")+
     labs(caption = "Black dots are the position of the dams")+
-    ggtitle(paste(name,"basin"))  
+    ggtitle(paste(name,"wshed"))  
 }
-
-
-x <- list(p1 = list(type='A',score=c(c1=9)),
-          p2 = list(type=c('A','B'),score=c(c1=8,c2=9)),
-          p3 = list(type=c('B','C'),score=c(c1=9,c2=7)),
-          p4 = list(type=c('B','C'),score=c(c1=8,c2=NA)))
-
-## Search exact values
-list.search(x, identical(., 'A'))
-?list.search
-
-data <- list(
-  p1 = list(name='Ken',age=24),
-  p2 = list(name='Kent',age=26),
-  p3 = list(name='Sam',age=24),
-  p4 = list(name='Keynes',age=30),
-  p5 = list(name='Kwen',age=31)
-)
-
-list.search(data, grepl('^K', .), 'character')
 
