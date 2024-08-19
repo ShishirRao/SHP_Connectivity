@@ -18,15 +18,22 @@ library("riverconn")
 library("shp2graph")
 library(ggrepel)
 
+setwd("E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity")
 
 #shape_river <- st_read("Nethravathi/Nethravathi_river.shp")
 #shape_basin <- st_read("Nethravathi/Nethravathi_wshed.shp")
 #shape_dams <- st_read("Nethravathi/Nethravathi_SHPs.shp")
 
 #shape_river <- st_read("Kaveri/Kaveri_river.shp")
-shape_river <- st_read("Kaveri/Kaveri_river_v2.shp") #confluences removed
-shape_basin <- st_read("Kaveri/Kaveri_sub_basin_Karnataka_wshed.shp")
-shape_dams <- st_read("Kaveri/Kaveri_SHPs.shp")
+#shape_river <- st_read("Kaveri/Kaveri_river_v2.shp") #confluences removed
+#shape_basin <- st_read("Kaveri/Kaveri_sub_basin_Karnataka_wshed.shp")
+#shape_dams <- st_read("Kaveri/Kaveri_SHPs.shp")
+
+#shape_river <- st_read("Sharavathi/Sharavathi_river.shp") #confluences removed
+shape_river <- st_read("Sharavathi/Sharavathi_river_v2.shp") #confluences removed
+shape_basin <- st_read("Sharavathi/Sharavathi_wshed.shp")
+shape_dams <- st_read("Sharavathi/Sharavathi_SHPs.shp")
+
 
 # remove irrigation canal based and offshore SHPs, and keep only stand-alone (river) and multipurpose SHPs
 shape_dams = shape_dams[shape_dams$Sitatued.o == "river" | shape_dams$Sitatued.o == "part of bigger project",]
