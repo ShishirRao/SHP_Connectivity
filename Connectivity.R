@@ -330,6 +330,6 @@ index[[1]] <- index_calculation(graph = river_graph,
                                 B_ij_flag = FALSE,
                                 index_type = "full",
                                 index_mode = "from")
-?index_calculation
+
 
 index[[1]]

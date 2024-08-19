@@ -27,7 +27,9 @@ g <- sub("(.+?)(\\_.*)", "\\1", filenames)
 g <- split(filenames, g)
 
 #call function to loop through each basin
-lapply(g,collate)
+listofres = lapply(g,collate)
+out.df <- (do.call("rbind", listofres))
+out.df
 
 # for each basin, extract the basin name, and pass river, dam and wshed shape file to index calculation function
 collate <- function(basin_vars){
@@ -40,7 +42,8 @@ collate <- function(basin_vars){
   dams_file = basin_vars[which(as.numeric(grepl('SHPs', basin_vars)) == 1)]
   
   #send river, wshed and dame file names to be read and for calculating index
-  index_calc_wrapper(basin_name,river_file,dams_file,wshed_file)
+  res = index_calc_wrapper(basin_name,river_file,dams_file,wshed_file)
+  return(res)
 }
 
 index_calc_wrapper <- function(name, river_file, dam_file, wshed_file){  
@@ -61,5 +64,7 @@ index_calc_wrapper <- function(name, river_file, dam_file, wshed_file){
     ggspatial::annotation_north_arrow(location = "br")+
     labs(caption = "Black dots are the position of the dams")+
     ggtitle(paste(name,"wshed"))  
+    
+    return(data.frame(name = name, Sum_length = sum(shape_river$DIST_UP_KM),mean_area = mean(shape_basin$UP_AREA)))
 }
 
