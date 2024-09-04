@@ -54,10 +54,14 @@ setwd("E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity")
 #shape_dams <- st_read("Tunga/Tunga_SHPs.shp")
 
 #shape_river <- st_read("Krishna/Krishna_river.shp")
-shape_river <- st_read("Krishna/Krishna_river_v2.shp")
-shape_basin <- st_read("Krishna/Krishna_wshed.shp")
-shape_dams <- st_read("Krishna/Krishna_SHPs.shp")
+#shape_river <- st_read("Krishna/Krishna_river_v2.shp")
+#shape_basin <- st_read("Krishna/Krishna_wshed.shp")
+#shape_dams <- st_read("Krishna/Krishna_SHPs.shp")
 
+#shape_river <- st_read("Bhima/Bhima_river.shp")
+shape_river <- st_read("Bhima/Bhima_river_v2.shp")
+shape_basin <- st_read("Bhima/Bhima_wshed.shp")
+shape_dams <- st_read("Bhima/Bhima_SHPs.shp")
 
 
 
@@ -256,7 +260,7 @@ ggplot() +
 confluences <- multiple_confluences(river_net_simplified) 
 head(confluences)
 
-#st_write(confluences[confluences$flag_confluences == TRUE,], "Krishna/confluences.shp")
+#st_write(confluences[confluences$flag_confluences == TRUE,], "Bhima/confluences.shp")
 
 ggplot() +
   coord_fixed() +
@@ -320,7 +324,7 @@ ggplot() +
 ?layer_spatial
 
 #st_write(network_links, "Nethravathi/network_links.shp")
-#st_write(river_net_simplified, "Tunga/river_net_simplified.shp")
+#st_write(river_net_simplified, "Bhima/river_net_simplified.shp")
 
 
 # this won't work because not all rivers drain to the sea. Some are sub-basins
@@ -340,7 +344,6 @@ if(length(outlet)>1){
     outlet <- dwn_seg$NodeID[which(dwn_seg$length == min(dwn_seg$length))]  
   }
 }
-
 
 ggplot() +
   coord_fixed() +
@@ -401,3 +404,4 @@ index[[1]] <- index_calculation(graph = river_graph,
 
 
 index[[1]]
+
