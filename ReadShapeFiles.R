@@ -19,8 +19,6 @@ library("shp2graph")
 library(ggrepel)
 library(rlist)
 
-setwd("E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity/ShapeFiles/")
-
 
 # for each basin, extract the basin name, and pass river, dam and wshed shape file to index calculation function
 collate <- function(basin_vars){
@@ -47,7 +45,7 @@ collate <- function(basin_vars){
 index_calc_wrapper <- function(name, river_file, dam_file, wshed_file){  
 
   # read shape files
-  shape_river <- st_read(river_file) #confluences removed
+  shape_river <- st_read(river_file) 
   shape_basin <- st_read(wshed_file)
   shape_dams <- st_read(dam_file)
   
@@ -151,7 +149,7 @@ index_calc_wrapper <- function(name, river_file, dam_file, wshed_file){
     data.frame(NodeID = 1:length(.), geometry = .) %>%
     st_as_sf() %>%
     mutate(length = st_length(.)) %>%
-    st_join(., shape_river, join = st_is_within_distance, dist = 0.01 ) %>% 
+    st_join(., shape_river_small, join = st_is_within_distance, dist = 0.01 ) %>% 
     group_by(NodeID) %>%
     slice(which.max(UPLAND_SKM)) %>% 
     ungroup()
@@ -189,15 +187,23 @@ index_calc_wrapper <- function(name, river_file, dam_file, wshed_file){
   river_net_simplified <- river_net_simplified %>% 
     dplyr::select(NodeID, length, alt, DIST_DN_KM, UPLAND_SKM)
   
-  # use elevation instead of DIST_DN_KM to find the outlet because not all basins drain to the sea
-  outlet <- river_net_simplified$NodeID[which(river_net_simplified$alt == min(river_net_simplified$alt))]
+  # use DIST_DN_KM to find the downstream most outlet 
+  outlet <- river_net_simplified$NodeID[which(river_net_simplified$DIST_DN_KM == min(river_net_simplified$DIST_DN_KM))]
   
+  #if there are multiple segments, find the one with lowest elevation. Note: Just using elevation won't work because some segments
+  # can have elevation lower than the downstream most segment, due to inaccuracies in the elevation data
+  if(length(outlet)>1){
+    dwn_seg <- river_net_simplified[which(river_net_simplified$DIST_DN_KM == min(river_net_simplified$DIST_DN_KM)),]
+    outlet <- dwn_seg$NodeID[which(dwn_seg$alt == min(dwn_seg$alt))]
+    # if there still are multiple segments, then a decision has to be made based on other variables, to select the outlet.
+    # select the segment with the shortest length. no other option because dist_dn_km and alt are same for each segment
+    if(length(outlet)>1){
+      outlet <- dwn_seg$NodeID[which(dwn_seg$length == min(dwn_seg$length))]  
+    }
+  }
+
   ######## create igraph object  ########
   river_graph <- create_network(network_links, river_net_simplified, outlet)
-  
-  plot(river_graph)
-  
-  river_graph
   
   # check river_graph edges
   igraph::edge_attr(river_graph) %>% names
@@ -210,7 +216,6 @@ index_calc_wrapper <- function(name, river_file, dam_file, wshed_file){
   
   # update length attribute
   V(river_graph)$length <- V(river_graph)$length / 10000
-  hist(V(river_graph)$length)
   
   # update length attribute
   V(river_graph)$name <- as.character(V(river_graph)$name)
@@ -236,6 +241,8 @@ index_calc_wrapper <- function(name, river_file, dam_file, wshed_file){
 }
 
 #read shapefile, make a list of file names grouped basin-wise
+setwd("E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity/ShapeFiles/")
+
 filenames <- list.files(pattern="*.shp", full.names=FALSE)
 g <- sub("(.+?)(\\_.*)", "\\1", filenames)
 g <- split(filenames, g)
@@ -246,5 +253,5 @@ listofres = lapply(g,collate)
 out.df <- (do.call("rbind", listofres))
 out.df <- out.df %>% `rownames<-`(seq_len(nrow(out.df)))
 names(out.df) <- c("Basin","DCIp")
+out.df$DCIp = out.df$DCIp*100
 out.df
-
