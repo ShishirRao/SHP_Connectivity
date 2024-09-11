@@ -36,6 +36,7 @@ collate <- function(basin_vars){
   }else{
     #send river, wshed and dame file names to be read and for calculating index
     res = index_calc_wrapper(basin_name,river_file,dams_file,wshed_file)
+    #return(data.frame(name = basin_name, index = as.numeric(.2)))  
     return(res)
   }
 }
@@ -243,7 +244,9 @@ index_calc_wrapper <- function(name, river_file, dam_file, wshed_file){
 #read shapefile, make a list of file names grouped basin-wise
 setwd("E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity/ShapeFiles/")
 
+#Read all the shapefiles
 filenames <- list.files(pattern="*.shp", full.names=FALSE)
+#This expression seperates the basin name from _wshed, _river, or _SHP of the file name
 g <- sub("(.+?)(\\_.*)", "\\1", filenames)
 g <- split(filenames, g)
 g
@@ -252,6 +255,23 @@ g
 listofres = lapply(g,collate)
 out.df <- (do.call("rbind", listofres))
 out.df <- out.df %>% `rownames<-`(seq_len(nrow(out.df)))
-names(out.df) <- c("Basin","DCIp")
+names(out.df) <- c("Basin_name","DCIp")
 out.df$DCIp = out.df$DCIp*100
 out.df
+
+
+# prepare the output for display
+#read only the wsheds
+wshednames <- list.files(pattern="*wshed.shp", full.names=FALSE)
+wshed_shp_files <- lapply(wshednames, read_sf)
+basin_names <- sub("(.+?)(\\_.*)", "\\1", wshednames)
+wsheds <-bind_rows(wshed_shp_files)
+wsheds$Basin_name = basin_names
+
+wsheds = left_join(wsheds,out.df)
+st_write(wsheds, "E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity/Basins/Results_DCI.shp")
+
+getwd()
+
+
+
