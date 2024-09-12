@@ -27,7 +27,7 @@ setwd("E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity")
 #shape_river <- st_read("Kaveri/Kaveri_river.shp")
 shape_river <- st_read("Kaveri/Kaveri_river_v2.shp") #confluences removed
 shape_basin <- st_read("Kaveri/Kaveri_sub_basin_Karnataka_wshed.shp")
-shape_dams <- st_read("Kaveri/Kaveri_SHPs.shp")
+shape_SHPs <- st_read("Kaveri/Kaveri_SHPs.shp")
 shape_Large_dams <- st_read("Kaveri/Kaveri_LargeDams.shp")
 
 #shape_river <- st_read("Sharavathi/Sharavathi_river.shp") #confluences removed
@@ -65,17 +65,19 @@ shape_Large_dams <- st_read("Kaveri/Kaveri_LargeDams.shp")
 #shape_dams <- st_read("Bhima/Bhima_SHPs.shp")
 
 
-names(shape_dams)
+
 
 # remove SHPs on irrigation canals, tank outlets and offshore SHPs and keep only stand-alone (river) and multipurpose SHPs
-shape_dams = shape_dams[shape_dams$Sitatued.o == "river" | shape_dams$Sitatued.o == "part of bigger project",]
-names(shape_dams)
+shape_SHPs = shape_SHPs[shape_SHPs$Sitatued.o == "river" | shape_SHPs$Sitatued.o == "part of bigger project",]
+names(shape_SHPs)
 
-summary(shape_dams)
+summary(shape_SHPs)
 
-#combine with other large dams
+#combine with other large dams. Create a identified for large dams
 shape_Large_dams$Sitatued.o = "river_non_SHP"
-shape_dams_comb = bind_rows(list(shape_dams, shape_Large_dams))
+
+
+shape_dams = bind_rows(list(shape_SHPs, shape_Large_dams))
 
 
 #### shape files processing ####
@@ -200,17 +202,22 @@ ggplot() +
   theme_minimal() +
   ggspatial::layer_spatial(shape_river_small, color = "gray90" )+
   ggspatial::layer_spatial(shape_dams,color = "blue") +
-  ggspatial::layer_spatial(dams_snapped,color = "black") +
-  ggspatial::layer_spatial(dams_snapped_reduced,color = "red") +
+  ggspatial::layer_spatial(dams_snapped_reduced,color = "black") +
+  ggspatial::layer_spatial(dams_snapped_joined,color = "red") +
   scale_color_viridis(direction = -1, name= "upstream area \n(log10[Km^2])") +
   theme(legend.position = "bottom") +
   ggspatial::annotation_scale(location = "bl", style = "ticks") +
   ggspatial::annotation_north_arrow(location = "br")
 
-dams_snapped$SL.No.[(which(dams_snapped$SL.No. %in% dams_snapped_joined$SL.No. == FALSE))]
+dams_snapped$id[(which(dams_snapped$id %in% dams_snapped_joined$id == FALSE))]
+
+nrow(shape_SHPs)
+nrow(shape_Large_dams)
+nrow(shape_SHPs)+nrow(shape_Large_dams)
+nrow(dams_snapped_joined)
 
 #st_write(dams_snapped, "Krishna/dams_snapped.shp")
-#st_write(dams_snapped_joined, "Kaveri/dams_snapped_joined.shp")
+#st_write(dams_snapped_joined, "Kaveri/dams_snapped_joined.shp",delete_layer = TRUE)
 
 headwaters_checking <- headwaters_dam(dams_snapped_joined, shape_river_simple)
 head(headwaters_checking$flag_headwater)
