@@ -269,9 +269,10 @@ wsheds <-bind_rows(wshed_shp_files)
 wsheds$Basin_name = basin_names
 
 wsheds = left_join(wsheds,out.df)
-st_write(wsheds, "E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity/Basins/Results_DCI.shp")
+st_write(wsheds, "E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity/Basins/Results_DCI.shp", delete_layer = TRUE)
 
 getwd()
 
+?st_write()
 
 

@@ -25,9 +25,10 @@ setwd("E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity")
 #shape_dams <- st_read("Nethravathi/Nethravathi_SHPs.shp")
 
 #shape_river <- st_read("Kaveri/Kaveri_river.shp")
-#shape_river <- st_read("Kaveri/Kaveri_river_v2.shp") #confluences removed
-#shape_basin <- st_read("Kaveri/Kaveri_sub_basin_Karnataka_wshed.shp")
-#shape_dams <- st_read("Kaveri/Kaveri_SHPs.shp")
+shape_river <- st_read("Kaveri/Kaveri_river_v2.shp") #confluences removed
+shape_basin <- st_read("Kaveri/Kaveri_sub_basin_Karnataka_wshed.shp")
+shape_dams <- st_read("Kaveri/Kaveri_SHPs.shp")
+shape_Large_dams <- st_read("Kaveri/Kaveri_LargeDams.shp")
 
 #shape_river <- st_read("Sharavathi/Sharavathi_river.shp") #confluences removed
 #shape_river <- st_read("Sharavathi/Sharavathi_river_v2.shp") #confluences removed
@@ -59,16 +60,22 @@ setwd("E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity")
 #shape_dams <- st_read("Krishna/Krishna_SHPs.shp")
 
 #shape_river <- st_read("Bhima/Bhima_river.shp")
-shape_river <- st_read("Bhima/Bhima_river_v2.shp")
-shape_basin <- st_read("Bhima/Bhima_wshed.shp")
-shape_dams <- st_read("Bhima/Bhima_SHPs.shp")
+#shape_river <- st_read("Bhima/Bhima_river_v2.shp")
+#shape_basin <- st_read("Bhima/Bhima_wshed.shp")
+#shape_dams <- st_read("Bhima/Bhima_SHPs.shp")
 
 
-
+names(shape_dams)
 
 # remove SHPs on irrigation canals, tank outlets and offshore SHPs and keep only stand-alone (river) and multipurpose SHPs
 shape_dams = shape_dams[shape_dams$Sitatued.o == "river" | shape_dams$Sitatued.o == "part of bigger project",]
 names(shape_dams)
+
+summary(shape_dams)
+
+#combine with other large dams
+shape_Large_dams$Sitatued.o = "river_non_SHP"
+shape_dams_comb = bind_rows(list(shape_dams, shape_Large_dams))
 
 
 #### shape files processing ####
@@ -78,7 +85,9 @@ ggplot() +
   theme_minimal() +
   ggspatial::layer_spatial(shape_basin, fill = NA, color = "gray90") +
   ggspatial::layer_spatial(shape_river, aes(color = log10(UPLAND_SKM)) )+
-  ggspatial::layer_spatial(shape_dams,color = "red") +
+  #ggspatial::layer_spatial(shape_dams,color = "red") +
+  #ggspatial::layer_spatial(shape_Large_dams,color = "blue") +
+  ggspatial::layer_spatial(shape_dams_comb,color = "orange") +
   scale_color_viridis(direction = -1, name= "upstream area \n(log10[Km^2])") +
   theme(legend.position = "bottom") +
   ggspatial::annotation_scale(location = "bl", style = "ticks") +
