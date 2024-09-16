@@ -23,6 +23,7 @@ library(rlist)
 # for each basin, extract the basin name, and pass river, dam and wshed shape file to index calculation function
 collate <- function(basin_vars){
   
+  
   basin_name <- sub("(.+?)(\\_.*)", "\\1", basin_vars[1])
   
   # parse through file names to detect river, wshed and dam files
@@ -31,48 +32,48 @@ collate <- function(basin_vars){
   SHP_file = basin_vars[which(as.numeric(grepl('SHPs', basin_vars)) == 1)]
   LargeDams_file = basin_vars[which(as.numeric(grepl('LargeDams', basin_vars)) == 1)]
   
-  # read shape files
-  shape_river <- st_read(river_file) 
-  shape_basin <- st_read(wshed_file)
- 
-  
   #data.frame(name = c("A1","A2"), index = c(as.numeric(1),as.numeric(2)),type = c("SHPs","LargeDams"))
   
+  #if dam files are missing, then return here itself
   if (rlang::is_empty(SHP_file) & rlang::is_empty(LargeDams_file)){
     print(paste(basin_name,"no dams found"))
     return(data.frame(name = c(basin_name,basin_name),
                       index = c(as.numeric(1),as.numeric(1)),
                       type = c("SHPs","LargeDams")))  
-  }else if (rlang::is_empty(LargeDams_file)){
+  }
+  
+  # read shape files
+  shape_river <- st_read(river_file) 
+  shape_basin <- st_read(wshed_file)
+  
+  #clear the results variable
+  res1 = res2 = NULL
+  
+  if (!rlang::is_empty(SHP_file)){ # if SHP shape file is not empty, then read it
     shape_SHPs <- st_read(SHP_file)
-    shape_SHPs = shape_SHPs[shape_SHPs$Sitatued.o == "river" | shape_SHPs$Sitatued.o == "part of bigger project",]
-    print(paste(basin_name,"no Large dams found"))
-    res = index_calc_wrapper(basin_name,shape_river,shape_SHPs,shape_basin)
-    return(cbind(res,"SHPs"))
-  }else if (rlang::is_empty(SHP_file)){
-    shape_Large_dams <- st_read(LargeDams_file)
-    print(paste(basin_name,"no SHPs found"))
-    #send river, wshed and dame file names to be read and for calculating index
-    res = index_calc_wrapper(basin_name,shape_river,shape_Large_dams,shape_basin)
-    return(res)
-  }else {
-    #send river, wshed and dame file names to be read and for calculating index
-    shape_SHPs <- st_read(SHP_file)
+    # ignore irrigation canal SHPs
     shape_SHPs = shape_SHPs[shape_SHPs$Sitatued.o == "river" | shape_SHPs$Sitatued.o == "part of bigger project",]
     res1 = index_calc_wrapper(basin_name,shape_river,shape_SHPs,shape_basin)
-    
-    shape_Large_dams <- st_read(LargeDams_file)
-    print(paste(basin_name,"no SHPs found"))
-    #send river, wshed and dame file names to be read and for calculating index
-    res2 = index_calc_wrapper(basin_name,shape_river,shape_Large_dams,shape_basin)
-    
-    return(res)
+    #res1 = data.frame(basin_name,index = 20)
+    res1 = cbind(res1,type = "SHPs")
+    print(res1)
   }
+  
+  if (!rlang::is_empty(LargeDams_file)){
+    shape_Large_dams <- st_read(LargeDams_file)
+    #send river, wshed and dame file names to be read and for calculating index
+    shape_Large_dams$Sitatued.o = "river_non_SHP"
+    res2 = index_calc_wrapper(basin_name,shape_river,shape_Large_dams,shape_basin)
+    #res2 = data.frame(basin_name,index = 30)
+    res2 = cbind(res2,type = "LargeDams")
+    print(res2)
+  }
+  return(rbind(res1,res2))
 }
 
 
 # this function takes basin name, river_file, dam_file, wshed_file as inputs and returns network stats as a list
-index_calc_wrapper <- function(name, shape_river, SHP_file,shape_dams, shape_basin){  
+index_calc_wrapper <- function(name, shape_river, shape_dams, shape_basin){  
   
   #pruned river network
   # Set a threshold of 10 square kilometers
@@ -154,15 +155,6 @@ index_calc_wrapper <- function(name, shape_river, SHP_file,shape_dams, shape_bas
     headwaters_checking <- headwaters_dam(dams_snapped_joined, shape_river_simple)
     head(headwaters_checking$flag_headwater)
     
-    #call function to generate network based on the chosen subset of dams -- shps, large, dewatering etc
-    
-    DCI_SHP = NetworkGenerate(dams_snapped_joined[dams_snapped_joined$Sitatued.o != "river_non_SHP",],shape_river_simple,"SHPs")
-    DCI_LargeDams = NetworkGenerate(dams_snapped_joined[dams_snapped_joined$Sitatued.o == "river_non_SHP",],shape_river_simple,"LargeDams")
-    return(rbind(DCI_SHP,DCI_LargeDams))
-}
-
-NetworkGen = function(dams_snapped_joined,shape_river_simple,type){
-  
   # Create junction point shapefile
   network_links <- rbind(
     dams_snapped_joined %>% 
@@ -268,7 +260,7 @@ NetworkGen = function(dams_snapped_joined,shape_river_simple,type){
                                   index_mode = "from")
   
     
-    return(data.frame(name = name, DCIp = index[[1]][3]),type = type)
+    return(data.frame(name = name, DCIp = index[[1]][3]))
 }
 
 #read shapefile, make a list of file names grouped basin-wise
@@ -281,14 +273,12 @@ g <- sub("(.+?)(\\_.*)", "\\1", filenames)
 g <- split(filenames, g)
 g
 
-g[17]
 
 #call function to loop through each basin calculating DCI
 listofres = lapply(g,collate)
-listofres = lapply(g[17],collate)
 out.df <- (do.call("rbind", listofres))
 out.df <- out.df %>% `rownames<-`(seq_len(nrow(out.df)))
-names(out.df) <- c("Basin_name","DCIp")
+names(out.df) <- c("Basin_name","DCIp","Type")
 out.df$DCIp = out.df$DCIp*100
 out.df
 
