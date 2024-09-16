@@ -65,6 +65,10 @@ shape_Large_dams <- st_read("Kaveri/Kaveri_LargeDams.shp")
 #shape_dams <- st_read("Bhima/Bhima_SHPs.shp")
 
 
+shape_SHPs <- st_read("Kaveri/Kaveri_SHPss.shp")
+shape_Large_dams <- st_read("Kaveri/Kaveri_LargeDamss.shp")
+
+rlang::is_empty(shape_SHPs)
 
 
 # remove SHPs on irrigation canals, tank outlets and offshore SHPs and keep only stand-alone (river) and multipurpose SHPs
@@ -78,7 +82,6 @@ shape_Large_dams$Sitatued.o = "river_non_SHP"
 
 
 shape_dams = bind_rows(list(shape_SHPs, shape_Large_dams))
-
 
 #### shape files processing ####
 
@@ -233,191 +236,196 @@ ggplot() +
   ggspatial::annotation_scale(location = "bl", style = "ticks") +
   labs(caption = "Hollow points are the position of the dams")
 
+DCI_Kaveri_SHP = NetworkGenerate(dams_snapped_joined[dams_snapped_joined$Sitatued.o != "river_non_SHP",],shape_river_simple)
+DCI_Kaveri_Large = NetworkGenerate(dams_snapped_joined[dams_snapped_joined$Sitatued.o == "river_non_SHP",],shape_river_simple)
 
-# Create junction point shapefile
-network_links <- rbind(
-  dams_snapped_joined %>% 
-    mutate(type = "dam", id_barrier = id_dam) %>%
-    dplyr::select(type, id_barrier, pass_u, pass_d),
-  river_joins %>% mutate(type = "joint") %>%
-    dplyr::select(type) %>%
-    mutate(id_barrier = NA, pass_u = NA, pass_d = NA) %>%
-    rename(geometry = x)) %>%
-  mutate(id_links = 1:nrow(.))
+# This function generates a network link for the set of dams. The dam set could be of different scenarios 1) SHP 2)large 3) dewatered )
+NetworkGenerate <- function(dams_snapped_joined,shape_river_simple){
 
-
-# Split river network
-river_net_simplified <- lwgeom::st_split(shape_river_simple, network_links) %>%
-  st_collection_extract(.,"LINESTRING") %>%
-  data.frame(NodeID = 1:length(.), geometry = .) %>%
-  st_as_sf() %>%
-  mutate(length = st_length(.)) %>%
-  st_join(., shape_river_small, join = st_is_within_distance, dist = 0.01 ) %>% 
-  #st_join(., shape_river_small, join = st_contains) %>% 
-  #filter(NodeID == 50) 
-  group_by(NodeID) %>%
-  slice(which.max(UPLAND_SKM)) %>% 
-  ungroup()
-
-?st_join
-
-
-ggplot() +
-  coord_fixed() +
-  ggspatial::layer_spatial(river_net_simplified, color = "gray70")+
-  ggspatial::layer_spatial(network_links, aes(shape = type))+
-  scale_shape_manual(name = "Splitting points", values=c("dam" =17,"joint" = 23))+
-  theme_minimal() +
-  theme(legend.position = "bottom")+
-  ggspatial::annotation_north_arrow(location = "br")+
-  ggspatial::annotation_scale(location = "bl", style = "ticks")
-
-
-confluences <- multiple_confluences(river_net_simplified) 
-head(confluences)
-
-#st_write(confluences[confluences$flag_confluences == TRUE,], "Bhima/confluences.shp")
-
-ggplot() +
-  coord_fixed() +
-  ggspatial::layer_spatial(river_net_simplified, color = "gray70")+
-  ggspatial::layer_spatial(confluences, aes(shape = flag_confluences,color = flag_confluences))+
-    theme_minimal() +
-  theme(legend.position = "bottom")
-
-shp_check <- check_components(network_links, river_net_simplified)
-head(shp_check)
-
-#st_write(shp_check, "Krishna/shp_check.shp")
-#st_write(river_net_simplified,"kaveri/river_net_simplified.shp")
-
+  # Create junction point shapefile
+  network_links <- rbind(
+    dams_snapped_joined %>% 
+      mutate(type = "dam", id_barrier = id_dam) %>%
+      dplyr::select(type, id_barrier, pass_u, pass_d),
+    river_joins %>% mutate(type = "joint") %>%
+      dplyr::select(type) %>%
+      mutate(id_barrier = NA, pass_u = NA, pass_d = NA) %>%
+      rename(geometry = x)) %>%
+    mutate(id_links = 1:nrow(.))
   
-ggplot() +
-  coord_fixed() +
-  ggspatial::layer_spatial(river_net_simplified, color = "gray70")+
-  ggspatial::layer_spatial(shp_check, aes(shape = as.factor(component),color = as.factor(component)))+
-  theme_minimal() +
-  theme(legend.position = "bottom")
-
-?get_elev_raster
-
-
-# get DEM and transform to data frame with coordinates
-elevation <- get_elev_raster(shape_basin, z = 8)
-?get_elev_raster
-catchment_DEM <- raster::as.data.frame(elevation, xy = TRUE)
-
-?raster::as.data.frame
-
-# Get coordinates of the river network segments
-river_net_simplified_centroids <- river_net_simplified %>%
-  st_as_sf() %>%
-  st_centroid()
-
-# Get coordinates of both elements for joining
-Coord_Edges <- st_coordinates(river_net_simplified_centroids) #Coordinates of the joins
-Coord_DEM <- catchment_DEM[,1:2] #Coordinates of the dams
-
-# Matching each centroid with its closer altittude point to later obtain the altitudes
-matching_altitudes <- RANN::nn2(data=Coord_DEM, query = Coord_Edges, k=1, radius = 1)[[1]] 
-
-# Get values and add to the river shapefile
-catchment_DEM <- catchment_DEM[matching_altitudes,3]
-river_net_simplified <- river_net_simplified %>% 
-  mutate(alt = catchment_DEM)
-
-
-ggplot() +
-  coord_fixed() +
-  ggspatial::layer_spatial(river_net_simplified, aes(color = alt))+
-  scale_color_viridis(name = "Elevation")+
-  theme_minimal() +
-  theme(legend.position = "bottom")+
-  ggspatial::annotation_north_arrow(location = "br")+
-  ggspatial::annotation_scale(location = "bl", style = "ticks")
-
-?geom_spatial_label
-?layer_spatial
-
-#st_write(network_links, "Nethravathi/network_links.shp")
-#st_write(river_net_simplified, "Bhima/river_net_simplified.shp")
-
-
-# this won't work because not all rivers drain to the sea. Some are sub-basins
-#outlet <- river_net_simplified$NodeID[river_net_simplified$DIST_DN_KM == 0 ] 
-
-# use DIST_DN_KM to find the downstream most outlet 
-outlet <- river_net_simplified$NodeID[which(river_net_simplified$DIST_DN_KM == min(river_net_simplified$DIST_DN_KM))]
-
-#if there are multiple segments, find the one with lowest elevation. Note: Just using elevation won't work because some segments
-# can have elevation lower than the downstream most segment, due to inaccuracies in the elevation data
-if(length(outlet)>1){
-  dwn_seg <- river_net_simplified[which(river_net_simplified$DIST_DN_KM == min(river_net_simplified$DIST_DN_KM)),]
-  outlet <- dwn_seg$NodeID[which(dwn_seg$alt == min(dwn_seg$alt))]
-  # if there still are multiple segments, then a decision has to be made based on other variables, to select the outlet.
-  # select the segment with the shortest length. no other option because dist_dn_km and alt are same for each segment
+  
+  # Split river network
+  river_net_simplified <- lwgeom::st_split(shape_river_simple, network_links) %>%
+    st_collection_extract(.,"LINESTRING") %>%
+    data.frame(NodeID = 1:length(.), geometry = .) %>%
+    st_as_sf() %>%
+    mutate(length = st_length(.)) %>%
+    st_join(., shape_river_small, join = st_is_within_distance, dist = 0.01 ) %>% 
+    #st_join(., shape_river_small, join = st_contains) %>% 
+    #filter(NodeID == 50) 
+    group_by(NodeID) %>%
+    slice(which.max(UPLAND_SKM)) %>% 
+    ungroup()
+  
+  ?st_join
+  
+  
+  ggplot() +
+    coord_fixed() +
+    ggspatial::layer_spatial(river_net_simplified, color = "gray70")+
+    ggspatial::layer_spatial(network_links, aes(shape = type))+
+    scale_shape_manual(name = "Splitting points", values=c("dam" =17,"joint" = 23))+
+    theme_minimal() +
+    theme(legend.position = "bottom")+
+    ggspatial::annotation_north_arrow(location = "br")+
+    ggspatial::annotation_scale(location = "bl", style = "ticks")
+  
+  
+  confluences <- multiple_confluences(river_net_simplified) 
+  head(confluences)
+  
+  #st_write(confluences[confluences$flag_confluences == TRUE,], "Bhima/confluences.shp")
+  
+  ggplot() +
+    coord_fixed() +
+    ggspatial::layer_spatial(river_net_simplified, color = "gray70")+
+    ggspatial::layer_spatial(confluences, aes(shape = flag_confluences,color = flag_confluences))+
+    theme_minimal() +
+    theme(legend.position = "bottom")
+  
+  shp_check <- check_components(network_links, river_net_simplified)
+  head(shp_check)
+  
+  #st_write(shp_check, "Krishna/shp_check.shp")
+  #st_write(river_net_simplified,"kaveri/river_net_simplified.shp")
+  
+  
+  ggplot() +
+    coord_fixed() +
+    ggspatial::layer_spatial(river_net_simplified, color = "gray70")+
+    ggspatial::layer_spatial(shp_check, aes(shape = as.factor(component),color = as.factor(component)))+
+    theme_minimal() +
+    theme(legend.position = "bottom")
+  
+  ?get_elev_raster
+  
+  
+  # get DEM and transform to data frame with coordinates
+  elevation <- get_elev_raster(shape_basin, z = 8)
+  ?get_elev_raster
+  catchment_DEM <- raster::as.data.frame(elevation, xy = TRUE)
+  
+  ?raster::as.data.frame
+  
+  # Get coordinates of the river network segments
+  river_net_simplified_centroids <- river_net_simplified %>%
+    st_as_sf() %>%
+    st_centroid()
+  
+  # Get coordinates of both elements for joining
+  Coord_Edges <- st_coordinates(river_net_simplified_centroids) #Coordinates of the joins
+  Coord_DEM <- catchment_DEM[,1:2] #Coordinates of the dams
+  
+  # Matching each centroid with its closer altittude point to later obtain the altitudes
+  matching_altitudes <- RANN::nn2(data=Coord_DEM, query = Coord_Edges, k=1, radius = 1)[[1]] 
+  
+  # Get values and add to the river shapefile
+  catchment_DEM <- catchment_DEM[matching_altitudes,3]
+  river_net_simplified <- river_net_simplified %>% 
+    mutate(alt = catchment_DEM)
+  
+  
+  ggplot() +
+    coord_fixed() +
+    ggspatial::layer_spatial(river_net_simplified, aes(color = alt))+
+    scale_color_viridis(name = "Elevation")+
+    theme_minimal() +
+    theme(legend.position = "bottom")+
+    ggspatial::annotation_north_arrow(location = "br")+
+    ggspatial::annotation_scale(location = "bl", style = "ticks")
+  
+  ?geom_spatial_label
+  ?layer_spatial
+  
+  #st_write(network_links, "Nethravathi/network_links.shp")
+  #st_write(river_net_simplified, "Bhima/river_net_simplified.shp")
+  
+  
+  # this won't work because not all rivers drain to the sea. Some are sub-basins
+  #outlet <- river_net_simplified$NodeID[river_net_simplified$DIST_DN_KM == 0 ] 
+  
+  # use DIST_DN_KM to find the downstream most outlet 
+  outlet <- river_net_simplified$NodeID[which(river_net_simplified$DIST_DN_KM == min(river_net_simplified$DIST_DN_KM))]
+  
+  #if there are multiple segments, find the one with lowest elevation. Note: Just using elevation won't work because some segments
+  # can have elevation lower than the downstream most segment, due to inaccuracies in the elevation data
   if(length(outlet)>1){
-    outlet <- dwn_seg$NodeID[which(dwn_seg$length == min(dwn_seg$length))]  
+    dwn_seg <- river_net_simplified[which(river_net_simplified$DIST_DN_KM == min(river_net_simplified$DIST_DN_KM)),]
+    outlet <- dwn_seg$NodeID[which(dwn_seg$alt == min(dwn_seg$alt))]
+    # if there still are multiple segments, then a decision has to be made based on other variables, to select the outlet.
+    # select the segment with the shortest length. no other option because dist_dn_km and alt are same for each segment
+    if(length(outlet)>1){
+      outlet <- dwn_seg$NodeID[which(dwn_seg$length == min(dwn_seg$length))]  
+    }
   }
+  
+  ggplot() +
+    coord_fixed() +
+    theme_minimal() +
+    ggspatial::layer_spatial(shape_river_small, color = "gray90" )+
+    ggspatial::layer_spatial(river_net_simplified[river_net_simplified$NodeID == outlet,],color = "black" )+
+    ggspatial::layer_spatial(shape_dams,color = "blue") +
+    ggspatial::layer_spatial(dams_snapped,color = "black") +
+    ggspatial::layer_spatial(dams_snapped_reduced,color = "red") +
+    scale_color_viridis(direction = -1, name= "upstream area \n(log10[Km^2])") +
+    theme(legend.position = "bottom") +
+    ggspatial::annotation_scale(location = "bl", style = "ticks") +
+    ggspatial::annotation_north_arrow(location = "br")
+  
+  
+  ######## create igraph object  ########
+  # To avoid issues in the network creation process, retain only the important columns
+  river_net_simplified <- river_net_simplified %>% 
+    dplyr::select(NodeID, length, alt, DIST_DN_KM, UPLAND_SKM)
+  
+  river_graph <- create_network(network_links, river_net_simplified, outlet)
+  
+  plot(river_graph)
+  
+  river_graph
+  
+  # check river_graph edges
+  igraph::edge_attr(river_graph) %>% names
+  ## [1] "type"       "id_links"   "id_barrier" "pass_u"     "pass_d"
+  
+  # check river_graph vertices
+  igraph::vertex_attr(river_graph) %>% names
+  ## [1] "name"       "length"     "alt"        "DIST_DN_KM" "UPLAND_SKM"
+  
+  
+  # update length attribute
+  V(river_graph)$length <- V(river_graph)$length / 10000
+  hist(V(river_graph)$length)
+  
+  # update length attribute
+  V(river_graph)$name <- as.character(V(river_graph)$name)
+  
+  
+  # Initialize list where to store all the index calculation outputs
+  index <- list()
+  lab_index <- list()
+  letter_index <- list()
+  
+  # 1: Symmetric Dendritic Connectivity Index (no biotic effects)
+  lab_index[[1]] <- "Symmetric DCI"
+  letter_index[[1]] <- "A"
+  index[[1]] <- index_calculation(graph = river_graph,
+                                  weight = "length",
+                                  c_ij_flag = TRUE,
+                                  B_ij_flag = FALSE,
+                                  index_type = "full",
+                                  index_mode = "from")
+  
+  
+  return(index[[1]])
 }
-
-ggplot() +
-  coord_fixed() +
-  theme_minimal() +
-  ggspatial::layer_spatial(shape_river_small, color = "gray90" )+
-  ggspatial::layer_spatial(river_net_simplified[river_net_simplified$NodeID == outlet,],color = "black" )+
-  ggspatial::layer_spatial(shape_dams,color = "blue") +
-  ggspatial::layer_spatial(dams_snapped,color = "black") +
-  ggspatial::layer_spatial(dams_snapped_reduced,color = "red") +
-  scale_color_viridis(direction = -1, name= "upstream area \n(log10[Km^2])") +
-  theme(legend.position = "bottom") +
-  ggspatial::annotation_scale(location = "bl", style = "ticks") +
-  ggspatial::annotation_north_arrow(location = "br")
-
-
-######## create igraph object  ########
-# To avoid issues in the network creation process, retain only the important columns
-river_net_simplified <- river_net_simplified %>% 
-  dplyr::select(NodeID, length, alt, DIST_DN_KM, UPLAND_SKM)
-
-river_graph <- create_network(network_links, river_net_simplified, outlet)
-
-plot(river_graph)
-
-river_graph
-
-# check river_graph edges
-igraph::edge_attr(river_graph) %>% names
-## [1] "type"       "id_links"   "id_barrier" "pass_u"     "pass_d"
-
-# check river_graph vertices
-igraph::vertex_attr(river_graph) %>% names
-## [1] "name"       "length"     "alt"        "DIST_DN_KM" "UPLAND_SKM"
-
-
-# update length attribute
-V(river_graph)$length <- V(river_graph)$length / 10000
-hist(V(river_graph)$length)
-
-# update length attribute
-V(river_graph)$name <- as.character(V(river_graph)$name)
-
-
-# Initialize list where to store all the index calculation outputs
-index <- list()
-lab_index <- list()
-letter_index <- list()
-
-# 1: Symmetric Dendritic Connectivity Index (no biotic effects)
-lab_index[[1]] <- "Symmetric DCI"
-letter_index[[1]] <- "A"
-index[[1]] <- index_calculation(graph = river_graph,
-                                weight = "length",
-                                c_ij_flag = TRUE,
-                                B_ij_flag = FALSE,
-                                index_type = "full",
-                                index_mode = "from")
-
-
-index[[1]]
-
