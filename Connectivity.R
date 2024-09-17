@@ -25,10 +25,10 @@ setwd("E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity")
 #shape_dams <- st_read("Nethravathi/Nethravathi_SHPs.shp")
 
 #shape_river <- st_read("Kaveri/Kaveri_river.shp")
-shape_river <- st_read("Kaveri/Kaveri_river_v2.shp") #confluences removed
-shape_basin <- st_read("Kaveri/Kaveri_sub_basin_Karnataka_wshed.shp")
-shape_SHPs <- st_read("Kaveri/Kaveri_SHPs.shp")
-shape_Large_dams <- st_read("Kaveri/Kaveri_LargeDams.shp")
+#shape_river <- st_read("Kaveri/Kaveri_river_v2.shp") #confluences removed
+#shape_basin <- st_read("Kaveri/Kaveri_sub_basin_Karnataka_wshed.shp")
+#shape_SHPs <- st_read("Kaveri/Kaveri_SHPs.shp")
+#shape_Large_dams <- st_read("Kaveri/Kaveri_LargeDams.shp")
 
 #shape_river <- st_read("Sharavathi/Sharavathi_river.shp") #confluences removed
 #shape_river <- st_read("Sharavathi/Sharavathi_river_v2.shp") #confluences removed
@@ -50,9 +50,10 @@ shape_Large_dams <- st_read("Kaveri/Kaveri_LargeDams.shp")
 #shape_dams <- st_read("Gurupura/Gurupura_SHPs.shp")
 
 #shape_river <- st_read("Tunga/Tunga_river.shp")
-#shape_river <- st_read("Tunga/Tunga_river_v2.shp")
-#shape_basin <- st_read("Tunga/Tunga_wshed.shp")
-#shape_dams <- st_read("Tunga/Tunga_SHPs.shp")
+shape_river <- st_read("Tunga/Tunga_river_v2.shp")
+shape_basin <- st_read("Tunga/Tunga_wshed.shp")
+shape_SHPs <- st_read("Tunga/Tunga_SHPs.shp")
+shape_Large_dams <- st_read("Tunga/Tunga_LargeDams.shp")
 
 #shape_river <- st_read("Krishna/Krishna_river.shp")
 #shape_river <- st_read("Krishna/Krishna_river_v2.shp")
@@ -63,12 +64,6 @@ shape_Large_dams <- st_read("Kaveri/Kaveri_LargeDams.shp")
 #shape_river <- st_read("Bhima/Bhima_river_v2.shp")
 #shape_basin <- st_read("Bhima/Bhima_wshed.shp")
 #shape_dams <- st_read("Bhima/Bhima_SHPs.shp")
-
-
-shape_SHPs <- st_read("Kaveri/Kaveri_SHPss.shp")
-shape_Large_dams <- st_read("Kaveri/Kaveri_LargeDamss.shp")
-
-rlang::is_empty(shape_SHPs)
 
 
 # remove SHPs on irrigation canals, tank outlets and offshore SHPs and keep only stand-alone (river) and multipurpose SHPs
@@ -82,6 +77,7 @@ shape_Large_dams$Sitatued.o = "river_non_SHP"
 
 
 shape_dams = bind_rows(list(shape_SHPs, shape_Large_dams))
+shape_dams = shape_Large_dams
 
 #### shape files processing ####
 
@@ -92,7 +88,7 @@ ggplot() +
   ggspatial::layer_spatial(shape_river, aes(color = log10(UPLAND_SKM)) )+
   #ggspatial::layer_spatial(shape_dams,color = "red") +
   #ggspatial::layer_spatial(shape_Large_dams,color = "blue") +
-  ggspatial::layer_spatial(shape_dams_comb,color = "orange") +
+  ggspatial::layer_spatial(shape_dams,color = "orange") +
   scale_color_viridis(direction = -1, name= "upstream area \n(log10[Km^2])") +
   theme(legend.position = "bottom") +
   ggspatial::annotation_scale(location = "bl", style = "ticks") +
@@ -216,11 +212,12 @@ dams_snapped$id[(which(dams_snapped$id %in% dams_snapped_joined$id == FALSE))]
 
 nrow(shape_SHPs)
 nrow(shape_Large_dams)
+nrow(shape_dams)
 nrow(shape_SHPs)+nrow(shape_Large_dams)
 nrow(dams_snapped_joined)
 
 #st_write(dams_snapped, "Krishna/dams_snapped.shp")
-#st_write(dams_snapped_joined, "Kaveri/dams_snapped_joined.shp",delete_layer = TRUE)
+#st_write(dams_snapped_joined, "Tunga/dams_snapped_joined.shp",delete_layer = TRUE)
 
 headwaters_checking <- headwaters_dam(dams_snapped_joined, shape_river_simple)
 head(headwaters_checking$flag_headwater)
@@ -236,8 +233,10 @@ ggplot() +
   ggspatial::annotation_scale(location = "bl", style = "ticks") +
   labs(caption = "Hollow points are the position of the dams")
 
-DCI_Kaveri_SHP = NetworkGenerate(dams_snapped_joined[dams_snapped_joined$Sitatued.o != "river_non_SHP",],shape_river_simple)
-DCI_Kaveri_Large = NetworkGenerate(dams_snapped_joined[dams_snapped_joined$Sitatued.o == "river_non_SHP",],shape_river_simple)
+nrow(dams_snapped_joined[dams_snapped_joined$Sitatued.o == "river_non_SHP",])
+
+DCI_SHP = NetworkGenerate(dams_snapped_joined[dams_snapped_joined$Sitatued.o != "river_non_SHP",],shape_river_simple)
+DCI_Large = NetworkGenerate(dams_snapped_joined[dams_snapped_joined$Sitatued.o == "river_non_SHP",],shape_river_simple)
 
 # This function generates a network link for the set of dams. The dam set could be of different scenarios 1) SHP 2)large 3) dewatered )
 NetworkGenerate <- function(dams_snapped_joined,shape_river_simple){

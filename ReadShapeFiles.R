@@ -23,7 +23,7 @@ library(rlist)
 # for each basin, extract the basin name, and pass river, dam and wshed shape file to index calculation function
 collate <- function(basin_vars){
   
-  
+  #basin_vars = g[30][[1]]
   basin_name <- sub("(.+?)(\\_.*)", "\\1", basin_vars[1])
   
   # parse through file names to detect river, wshed and dam files
@@ -75,6 +75,8 @@ collate <- function(basin_vars){
 # this function takes basin name, river_file, dam_file, wshed_file as inputs and returns network stats as a list
 index_calc_wrapper <- function(name, shape_river, shape_dams, shape_basin){  
   
+  #shape_dams = shape_Large_dams
+  #name = basin_name
   #pruned river network
   # Set a threshold of 10 square kilometers
   threshold = 10
@@ -151,6 +153,24 @@ index_calc_wrapper <- function(name, shape_river, shape_dams, shape_basin){
     group_by(id) %>%
     slice(which.max(UPLAND_SKM)) %>% 
     ungroup()
+  
+  ggplot() +
+    coord_fixed() +
+    theme_minimal() +
+    ggspatial::layer_spatial(shape_river_small, color = "gray90" )+
+    ggspatial::layer_spatial(shape_dams,color = "blue") +
+    ggspatial::layer_spatial(dams_snapped_reduced,color = "black") +
+    ggspatial::layer_spatial(dams_snapped_joined,color = "red") +
+    scale_color_viridis(direction = -1, name= "upstream area \n(log10[Km^2])") +
+    theme(legend.position = "bottom") +
+    ggspatial::annotation_scale(location = "bl", style = "ticks") +
+    ggspatial::annotation_north_arrow(location = "br")
+  
+  nrow(shape_SHPs)
+  nrow(shape_Large_dams)
+  nrow(shape_dams)
+  nrow(shape_SHPs)+nrow(shape_Large_dams)
+  nrow(dams_snapped_joined)
   
     headwaters_checking <- headwaters_dam(dams_snapped_joined, shape_river_simple)
     head(headwaters_checking$flag_headwater)
