@@ -23,7 +23,7 @@ library(rlist)
 # for each basin, extract the basin name, and pass river, dam and wshed shape file to index calculation function
 collate <- function(basin_vars){
   
-  #basin_vars = g[30][[1]]
+  #basin_vars = g[15][[1]]
   basin_name <- sub("(.+?)(\\_.*)", "\\1", basin_vars[1])
   
   # parse through file names to detect river, wshed and dam files
@@ -76,6 +76,7 @@ collate <- function(basin_vars){
 index_calc_wrapper <- function(name, shape_river, shape_dams, shape_basin){  
   
   #shape_dams = shape_Large_dams
+  #shape_dams = shape_SHPs
   #name = basin_name
   #pruned river network
   # Set a threshold of 10 square kilometers
@@ -293,9 +294,11 @@ g <- sub("(.+?)(\\_.*)", "\\1", filenames)
 g <- split(filenames, g)
 g
 
+g[15]
 
 #call function to loop through each basin calculating DCI
 listofres = lapply(g,collate)
+listofres = lapply(g[15],collate)
 out.df <- (do.call("rbind", listofres))
 out.df <- out.df %>% `rownames<-`(seq_len(nrow(out.df)))
 names(out.df) <- c("Basin_name","DCIp","Type")
@@ -319,3 +322,90 @@ getwd()
 ?st_write()
 
 
+
+
+network_links_df <- st_is_within_distance(network_links, river_net_simplified,
+                                          dist = 0.01) %>%
+  lapply(.,
+         FUN = function(x){data.frame("from" = x[1], "to" = x[2], "to2" = x[3]) }) %>%
+  do.call(rbind,.) %>%
+  cbind(network_links %>% st_drop_geometry())
+
+# Get a full distance matrix
+# - note: directions are messed up!
+# - note: for the joints I am creating triangles (i.e. there are 3 nodes and 3 links):
+# this is to be corrected afterwards when I decide the directionality
+full_net_links_df <- rbind(
+  network_links_df %>%
+    filter(!is.na(to2)) %>%
+    dplyr::select(-to2) %>%
+    rename(from = from, to = to),
+  network_links_df %>%
+    filter(!is.na(to2)) %>%
+    dplyr::select(-to) %>%
+    rename(from = from, to = to2),
+  network_links_df %>%
+    filter(!is.na(to2)) %>%
+    dplyr::select(-from) %>%
+    rename(from = to, to = to2) ,
+  network_links_df %>%
+    filter(is.na(to2)) %>%
+    dplyr::select(-to2)
+) %>%
+  #dplyr::select(from, to, type, id_dam, pass_u, pass_d) %>%
+  mutate(id_links = 1:nrow(.))
+
+# Create vertices vector
+vertices <- river_net_simplified %>% 
+  st_drop_geometry %>%
+  mutate(name = NodeID) %>%
+  mutate(length = as.numeric(length))
+
+# Create a graph based on this distance matrix and adjust directions
+# note: add vertex name so it's easier to identify them in the next steps
+river_temp_2 <- igraph::graph_from_data_frame(
+  d = full_net_links_df,
+  v = vertices,
+  directed = FALSE) %>%
+  igraph::simplify(remove.loops = FALSE, remove.multiple = TRUE, edge.attr.comb="first")
+
+# Remove triangles from graph: this way the joints are keeping the right directionality
+cliq3 <- cliques(river_temp_2, 3, 3)
+links_to_remove <- list()
+for (i in 1:length(cliq3)){
+  full_dist <- distances(river_temp_2, v =cliq3[[i]], to = outlet)
+  links_to_remove[[i]] <- data.frame(
+    "from" = rownames(full_dist)[full_dist != min(full_dist)],
+    "to" = rownames(full_dist)[full_dist != min(full_dist)] %>% rev)
+}
+links_to_remove <- do.call(rbind, links_to_remove)
+
+# Create a graph with the edges to remove and subtract it from the original graph
+graph_to_remove <- graph_from_data_frame(d = links_to_remove,
+                                         directed = FALSE)
+river_temp <- difference(river_temp_2, graph_to_remove )
+
+# Make the graph directional
+# the algorithms checks edges distances to outlet and assigns direction
+river_temp_df <- igraph::as_data_frame(river_temp, what = "edges") %>%
+  mutate(from = as.numeric(from), to = as.numeric(to))
+out <- list()
+for (iii in 1:nrow(river_temp_df)) {
+  df_iter <- river_temp_df[iii, ]
+  delta <- distances(river_temp, v = df_iter$from, to = outlet) -
+    distances(river_temp, v = df_iter$to, to = outlet)
+  if (delta > 0) {from = df_iter$from; to = df_iter$to}
+  if (delta < 0) {from = df_iter$to; to = df_iter$from}
+  out[[iii]] <- data.frame("from" = from, "to" = to,
+                           "type" = df_iter$type, 
+                           "id_links" = df_iter$id_links, 
+                           "id_barrier"=df_iter$id_barrier,
+                           "pass_u" = df_iter$pass_u,
+                           "pass_d" = df_iter$pass_d)
+}
+
+river_graph_df <- do.call(rbind, out)
+river_graph <- graph_from_data_frame(
+  d = river_graph_df,
+  directed = TRUE,
+  v = vertices)

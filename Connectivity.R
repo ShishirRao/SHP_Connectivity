@@ -50,15 +50,18 @@ setwd("E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity")
 #shape_dams <- st_read("Gurupura/Gurupura_SHPs.shp")
 
 #shape_river <- st_read("Tunga/Tunga_river.shp")
-shape_river <- st_read("Tunga/Tunga_river_v2.shp")
-shape_basin <- st_read("Tunga/Tunga_wshed.shp")
-shape_SHPs <- st_read("Tunga/Tunga_SHPs.shp")
-shape_Large_dams <- st_read("Tunga/Tunga_LargeDams.shp")
+#shape_river <- st_read("Tunga/Tunga_river_v2.shp")
+#shape_basin <- st_read("Tunga/Tunga_wshed.shp")
+#shape_SHPs <- st_read("Tunga/Tunga_SHPs.shp")
+#shape_Large_dams <- st_read("Tunga/Tunga_LargeDams.shp")
 
 #shape_river <- st_read("Krishna/Krishna_river.shp")
 #shape_river <- st_read("Krishna/Krishna_river_v2.shp")
+shape_river <- st_read("Krishna/Krishna_river_v3.shp")
 #shape_basin <- st_read("Krishna/Krishna_wshed.shp")
-#shape_dams <- st_read("Krishna/Krishna_SHPs.shp")
+shape_basin <- st_read("Krishna/Krishna_wshed_v2.shp")
+shape_SHPs <- st_read("Krishna/Krishna_SHPs.shp")
+shape_Large_dams <- st_read("Krishna/Krishna_LargeDams.shp")
 
 #shape_river <- st_read("Bhima/Bhima_river.shp")
 #shape_river <- st_read("Bhima/Bhima_river_v2.shp")
@@ -77,7 +80,7 @@ shape_Large_dams$Sitatued.o = "river_non_SHP"
 
 
 shape_dams = bind_rows(list(shape_SHPs, shape_Large_dams))
-shape_dams = shape_Large_dams
+#shape_dams = shape_SHPs
 
 #### shape files processing ####
 
@@ -213,11 +216,11 @@ dams_snapped$id[(which(dams_snapped$id %in% dams_snapped_joined$id == FALSE))]
 nrow(shape_SHPs)
 nrow(shape_Large_dams)
 nrow(shape_dams)
-nrow(shape_SHPs)+nrow(shape_Large_dams)
 nrow(dams_snapped_joined)
 
 #st_write(dams_snapped, "Krishna/dams_snapped.shp")
-#st_write(dams_snapped_joined, "Tunga/dams_snapped_joined.shp",delete_layer = TRUE)
+#st_write(shape_river_small, "Krishna/shape_river_small.shp",delete_layer = TRUE)
+#st_write(dams_snapped_joined, "Krishna/dams_snapped_joined.shp",delete_layer = TRUE)
 
 headwaters_checking <- headwaters_dam(dams_snapped_joined, shape_river_simple)
 head(headwaters_checking$flag_headwater)
@@ -234,12 +237,15 @@ ggplot() +
   labs(caption = "Hollow points are the position of the dams")
 
 nrow(dams_snapped_joined[dams_snapped_joined$Sitatued.o == "river_non_SHP",])
+nrow(dams_snapped_joined[dams_snapped_joined$Sitatued.o != "river_non_SHP",])
 
 DCI_SHP = NetworkGenerate(dams_snapped_joined[dams_snapped_joined$Sitatued.o != "river_non_SHP",],shape_river_simple)
 DCI_Large = NetworkGenerate(dams_snapped_joined[dams_snapped_joined$Sitatued.o == "river_non_SHP",],shape_river_simple)
 
 # This function generates a network link for the set of dams. The dam set could be of different scenarios 1) SHP 2)large 3) dewatered )
 NetworkGenerate <- function(dams_snapped_joined,shape_river_simple){
+  
+  #dams_snapped_joined = dams_snapped_joined[dams_snapped_joined$Sitatued.o != "river_non_SHP",]
 
   # Create junction point shapefile
   network_links <- rbind(
@@ -283,7 +289,7 @@ NetworkGenerate <- function(dams_snapped_joined,shape_river_simple){
   confluences <- multiple_confluences(river_net_simplified) 
   head(confluences)
   
-  #st_write(confluences[confluences$flag_confluences == TRUE,], "Bhima/confluences.shp")
+  #st_write(confluences[confluences$flag_confluences == TRUE,], "Krishna/confluences.shp",delete_layer = TRUE)
   
   ggplot() +
     coord_fixed() +
