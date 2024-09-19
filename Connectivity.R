@@ -57,16 +57,18 @@ setwd("E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity")
 
 #shape_river <- st_read("Krishna/Krishna_river.shp")
 #shape_river <- st_read("Krishna/Krishna_river_v2.shp")
-shape_river <- st_read("Krishna/Krishna_river_v3.shp")
+#shape_river <- st_read("Krishna/Krishna_river_v3.shp")
 #shape_basin <- st_read("Krishna/Krishna_wshed.shp")
-shape_basin <- st_read("Krishna/Krishna_wshed_v2.shp")
-shape_SHPs <- st_read("Krishna/Krishna_SHPs.shp")
-shape_Large_dams <- st_read("Krishna/Krishna_LargeDams.shp")
+#shape_basin <- st_read("Krishna/Krishna_wshed_v2.shp")
+#shape_SHPs <- st_read("Krishna/Krishna_SHPs.shp")
+#shape_Large_dams <- st_read("Krishna/Krishna_LargeDams.shp")
 
 #shape_river <- st_read("Bhima/Bhima_river.shp")
-#shape_river <- st_read("Bhima/Bhima_river_v2.shp")
-#shape_basin <- st_read("Bhima/Bhima_wshed.shp")
-#shape_dams <- st_read("Bhima/Bhima_SHPs.shp")
+shape_river <- st_read("Bhima/Bhima_river_v2.shp")
+shape_basin <- st_read("Bhima/Bhima_wshed.shp")
+shape_SHPs <- st_read("Bhima/Bhima_SHPs.shp")
+shape_Large_dams <- st_read("Bhima/Bhima_LargeDams.shp")
+
 
 
 # remove SHPs on irrigation canals, tank outlets and offshore SHPs and keep only stand-alone (river) and multipurpose SHPs
