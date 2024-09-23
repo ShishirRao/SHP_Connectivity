@@ -294,12 +294,12 @@ g <- sub("(.+?)(\\_.*)", "\\1", filenames)
 g <- split(filenames, g)
 g
 
-g[7]
+g[24]
 
 listofres = NULL
 #call function to loop through each basin calculating DCI
 listofres = lapply(g,collate)
-listofres = lapply(g[7],collate)
+listofres = lapply(g[24],collate)
 out.df <- (do.call("rbind", listofres))
 out.df <- out.df %>% `rownames<-`(seq_len(nrow(out.df)))
 names(out.df) <- c("Basin_name","DCIp","Type")
