@@ -23,7 +23,7 @@ library(rlist)
 # for each basin, extract the basin name, and pass river, dam and wshed shape file to index calculation function
 collate <- function(basin_vars){
   
-  #basin_vars = g[15][[1]]
+  #basin_vars = g[13][[1]]
   basin_name <- sub("(.+?)(\\_.*)", "\\1", basin_vars[1])
   
   # parse through file names to detect river, wshed and dam files
@@ -294,11 +294,12 @@ g <- sub("(.+?)(\\_.*)", "\\1", filenames)
 g <- split(filenames, g)
 g
 
-g[3]
+g[7]
 
+listofres = NULL
 #call function to loop through each basin calculating DCI
 listofres = lapply(g,collate)
-listofres = lapply(g[3],collate)
+listofres = lapply(g[7],collate)
 out.df <- (do.call("rbind", listofres))
 out.df <- out.df %>% `rownames<-`(seq_len(nrow(out.df)))
 names(out.df) <- c("Basin_name","DCIp","Type")

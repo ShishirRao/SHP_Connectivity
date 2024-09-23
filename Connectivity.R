@@ -20,6 +20,7 @@ library(ggrepel)
 
 setwd("E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity")
 
+
 #shape_river <- st_read("Nethravathi/Nethravathi_river.shp")
 #shape_basin <- st_read("Nethravathi/Nethravathi_wshed.shp")
 #shape_dams <- st_read("Nethravathi/Nethravathi_SHPs.shp")
@@ -30,10 +31,11 @@ setwd("E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity")
 #shape_SHPs <- st_read("Kaveri/Kaveri_SHPs.shp")
 #shape_Large_dams <- st_read("Kaveri/Kaveri_LargeDams.shp")
 
-#shape_river <- st_read("Sharavathi/Sharavathi_river.shp") #confluences removed
-#shape_river <- st_read("Sharavathi/Sharavathi_river_v2.shp") #confluences removed
-#shape_basin <- st_read("Sharavathi/Sharavathi_wshed.shp")
-#shape_dams <- st_read("Sharavathi/Sharavathi_SHPs.shp")
+shape_river <- st_read("Sharavathi/Sharavathi_river.shp") #confluences removed
+shape_river <- st_read("Sharavathi/Sharavathi_river_v2.shp") #confluences removed
+shape_basin <- st_read("Sharavathi/Sharavathi_wshed.shp")
+shape_SHPs <- st_read("Sharavathi/Sharavathi_SHPs.shp")
+shape_Large_dams <- st_read("Sharavathi/Sharavathi_LargeDams.shp")
 
 #shape_river <- st_read("Haladi/Haladi_river.shp")
 #shape_basin <- st_read("Haladi/Haladi_wshed.shp")
@@ -64,10 +66,22 @@ setwd("E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity")
 #shape_Large_dams <- st_read("Krishna/Krishna_LargeDams.shp")
 
 #shape_river <- st_read("Bhima/Bhima_river.shp")
-shape_river <- st_read("Bhima/Bhima_river_v2.shp")
-shape_basin <- st_read("Bhima/Bhima_wshed.shp")
-shape_SHPs <- st_read("Bhima/Bhima_SHPs.shp")
-shape_Large_dams <- st_read("Bhima/Bhima_LargeDams.shp")
+#shape_river <- st_read("Bhima/Bhima_river_v2.shp")
+#shape_basin <- st_read("Bhima/Bhima_wshed.shp")
+#shape_SHPs <- st_read("Bhima/Bhima_SHPs.shp")
+#shape_Large_dams <- st_read("Bhima/Bhima_LargeDams.shp")
+
+#shape_river <- st_read("Kali/Kali_river.shp")
+#shape_river <- st_read("Kali/Kali_river_v2.shp")
+#shape_basin <- st_read("Kali/Kali_wshed.shp")
+#shape_SHPs <- st_read("Kali/Kali_SHPs.shp")
+#shape_Large_dams <- st_read("Kali/Kali_LargeDams.shp")
+
+#shape_river <- st_read("Gangavali/Gangavali_river.shp")
+#shape_basin <- st_read("Gangavali/Gangavali_wshed.shp")
+#shape_Large_dams <- st_read("Gangavali/Gangavali_LargeDams.shp")
+
+
 
 
 
@@ -83,6 +97,7 @@ shape_Large_dams$Sitatued.o = "river_non_SHP"
 
 shape_dams = bind_rows(list(shape_SHPs, shape_Large_dams))
 #shape_dams = shape_SHPs
+#shape_dams = shape_Large_dams
 
 #### shape files processing ####
 
@@ -247,7 +262,7 @@ DCI_Large = NetworkGenerate(dams_snapped_joined[dams_snapped_joined$Sitatued.o =
 # This function generates a network link for the set of dams. The dam set could be of different scenarios 1) SHP 2)large 3) dewatered )
 NetworkGenerate <- function(dams_snapped_joined,shape_river_simple){
   
-  #dams_snapped_joined = dams_snapped_joined[dams_snapped_joined$Sitatued.o != "river_non_SHP",]
+  dams_snapped_joined = dams_snapped_joined[dams_snapped_joined$Sitatued.o == "river_non_SHP",]
 
   # Create junction point shapefile
   network_links <- rbind(
