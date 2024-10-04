@@ -21,9 +21,12 @@ library(ggrepel)
 setwd("E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity")
 
 
-#shape_river <- st_read("Nethravathi/Nethravathi_river.shp")
-#shape_basin <- st_read("Nethravathi/Nethravathi_wshed.shp")
-#shape_dams <- st_read("Nethravathi/Nethravathi_SHPs.shp")
+shape_river <- st_read("Nethravathi/Nethravathi_river.shp")
+shape_river <- st_read("Nethravathi/Nethravathi_river_V2.shp")
+shape_basin <- st_read("Nethravathi/Nethravathi_wshed.shp")
+shape_SHPs <- st_read("Nethravathi/Nethravathi_SHPs.shp")
+shape_SHPs_PH <- st_read("Nethravathi/Nethravathi_SHPs_PH.shp")
+
 
 #shape_river <- st_read("Kaveri/Kaveri_river.shp")
 #shape_river <- st_read("Kaveri/Kaveri_river_v2.shp") #confluences removed
@@ -37,11 +40,11 @@ setwd("E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity")
 #shape_SHPs <- st_read("Sharavathi/Sharavathi_SHPs.shp")
 #shape_Large_dams <- st_read("Sharavathi/Sharavathi_LargeDams.shp")
 
-shape_river <- st_read("Haladi/Haladi_river.shp")
-shape_river <- st_read("Haladi/Haladi_river_v2.shp")
-shape_basin <- st_read("Haladi/Haladi_wshed.shp") 
-shape_SHPs <- st_read("Haladi/Haladi_SHPs.shp")
-shape_Large_dams <- st_read("Haladi/Haladi_LargeDams.shp")
+#shape_river <- st_read("Haladi/Haladi_river.shp")
+#shape_river <- st_read("Haladi/Haladi_river_v2.shp")
+#shape_basin <- st_read("Haladi/Haladi_wshed.shp") 
+#shape_SHPs <- st_read("Haladi/Haladi_SHPs.shp")
+#shape_Large_dams <- st_read("Haladi/Haladi_LargeDams.shp")
 
 #shape_river <- st_read("Suvarna/Suvarna_river.shp")
 #shape_river <- st_read("Suvarna/Suvarna_river_v2.shp")
@@ -90,15 +93,17 @@ shape_Large_dams <- st_read("Haladi/Haladi_LargeDams.shp")
 
 # remove SHPs on irrigation canals, tank outlets and offshore SHPs and keep only stand-alone (river) and multipurpose SHPs
 shape_SHPs = shape_SHPs[shape_SHPs$Sitatued.o == "river" | shape_SHPs$Sitatued.o == "part of bigger project",]
-names(shape_SHPs)
 
-summary(shape_SHPs)
+shape_SHPs_PH = shape_SHPs_PH[shape_SHPs_PH$Sitatued.o == "river" | shape_SHPs_PH$Sitatued.o == "part of bigger project",]
+
 
 #combine with other large dams. Create a identified for large dams
 shape_Large_dams$Sitatued.o = "river_non_SHP"
 
 
 shape_dams = bind_rows(list(shape_SHPs, shape_Large_dams))
+shape_dams = bind_rows(list(shape_SHPs, shape_Large_dams,shape_SHPs_PH))
+shape_dams = bind_rows(list(shape_SHPs, shape_SHPs_PH))
 #shape_dams = shape_SHPs
 #shape_dams = shape_Large_dams
 
@@ -234,13 +239,14 @@ ggplot() +
 dams_snapped$id[(which(dams_snapped$id %in% dams_snapped_joined$id == FALSE))]
 
 nrow(shape_SHPs)
+nrow(shape_SHPs_PH)
 nrow(shape_Large_dams)
 nrow(shape_dams)
 nrow(dams_snapped_joined)
 
 #st_write(dams_snapped, "Krishna/dams_snapped.shp")
 #st_write(shape_river_small, "Haladi/shape_river_small.shp",delete_layer = TRUE)
-#st_write(dams_snapped_joined, "Haladi/dams_snapped_joined.shp",delete_layer = TRUE)
+#st_write(dams_snapped_joined, "Nethravathi/dams_snapped_joined.shp",delete_layer = TRUE)
 
 headwaters_checking <- headwaters_dam(dams_snapped_joined, shape_river_simple)
 head(headwaters_checking$flag_headwater)
@@ -340,7 +346,6 @@ NetworkGenerate <- function(dams_snapped_joined,shape_river_simple){
   ?get_elev_raster
   catchment_DEM <- raster::as.data.frame(elevation, xy = TRUE)
   
-  ?raster::as.data.frame
   
   # Get coordinates of the river network segments
   river_net_simplified_centroids <- river_net_simplified %>%

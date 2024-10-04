@@ -23,7 +23,7 @@ library(rlist)
 # for each basin, extract the basin name, and pass river, dam and wshed shape file to index calculation function
 collate <- function(basin_vars){
   
-  #basin_vars = g[13][[1]]
+  #basin_vars = g[29][[1]]
   basin_name <- sub("(.+?)(\\_.*)", "\\1", basin_vars[1])
   
   # parse through file names to detect river, wshed and dam files
@@ -294,12 +294,12 @@ g <- sub("(.+?)(\\_.*)", "\\1", filenames)
 g <- split(filenames, g)
 g
 
-g[24]
+g[30]
 
 listofres = NULL
 #call function to loop through each basin calculating DCI
 listofres = lapply(g,collate)
-listofres = lapply(g[24],collate)
+#listofres = lapply(g[30],collate)
 out.df <- (do.call("rbind", listofres))
 out.df <- out.df %>% `rownames<-`(seq_len(nrow(out.df)))
 names(out.df) <- c("Basin_name","DCIp","Type")
@@ -316,7 +316,9 @@ wsheds <-bind_rows(wshed_shp_files)
 wsheds$Basin_name = basin_names
 
 wsheds = left_join(wsheds,out.df)
-#st_write(wsheds, "E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity/Basins/Results_DCI.shp", delete_layer = TRUE)
+#st_write(wsheds, "E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity/Basins/Results_DCI_v2.shp", delete_layer = TRUE)
+#write.csv(out.df, "E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity/Basins/DCI_v2.csv")
+
 
 getwd()
 
@@ -410,3 +412,13 @@ river_graph <- graph_from_data_frame(
   d = river_graph_df,
   directed = TRUE,
   v = vertices)
+
+
+
+
+ggplot(out.df,aes(x=Type,y=DCIp))+geom_point(aes(color = Basin_name))+
+  geom_line(aes(group = Basin_name,color = Basin_name))
+
++facet_wrap(.~Basin_name)
+
+            
