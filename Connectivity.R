@@ -271,16 +271,16 @@ DCI_Large = NetworkGenerate(dams_snapped_joined[dams_snapped_joined$Sitatued.o =
 # This function generates a network link for the set of dams. The dam set could be of different scenarios 1) SHP 2)large 3) dewatered )
 NetworkGenerate <- function(dams_snapped_joined,shape_river_simple){
   
-  #dams_snapped_joined = dams_snapped_joined[dams_snapped_joined$Sitatued.o != "river_non_SHP",]
+  dams_snapped_joined = dams_snapped_joined[dams_snapped_joined$Sitatued.o != "river_non_SHP",]
 
   # Create junction point shapefile
   network_links <- rbind(
     dams_snapped_joined %>% 
       mutate(type = "dam", id_barrier = id_dam) %>%
-      dplyr::select(type, id_barrier, pass_u, pass_d),
+      dplyr::select(type, id_barrier, pass_u, pass_d,Company),
     river_joins %>% mutate(type = "joint") %>%
       dplyr::select(type) %>%
-      mutate(id_barrier = NA, pass_u = NA, pass_d = NA) %>%
+      mutate(id_barrier = NA, pass_u = NA, pass_d = NA,Company = NA) %>%
       rename(geometry = x)) %>%
     mutate(id_links = 1:nrow(.))
   
@@ -378,9 +378,8 @@ NetworkGenerate <- function(dams_snapped_joined,shape_river_simple){
   ?layer_spatial
   
   #st_write(network_links, "Nethravathi/network_links.shp")
-  #st_write(river_net_simplified, "Bhima/river_net_simplified.shp")
-  
-  
+  #st_write(river_net_simplified, "Nethravathi/river_net_simplified_Dewatered.shp")
+
   # this won't work because not all rivers drain to the sea. Some are sub-basins
   #outlet <- river_net_simplified$NodeID[river_net_simplified$DIST_DN_KM == 0 ] 
   
@@ -457,5 +456,15 @@ NetworkGenerate <- function(dams_snapped_joined,shape_river_simple){
                                   index_mode = "from")
   
   index[[1]]
+  
+  edges = get.data.frame(river_graph, what = "edges")
+  vertices = get.data.frame(river_graph, what = "vertices")
+  
+  dewatered = as.numeric(edges$from[which(!is.na(edge_attr(river_graph)$Company))])
+  dewatered = c(dewatered,as.numeric(edges$to[which(!is.na(edge_attr(river_graph)$Company))]))
+  dewatered = dewatered[duplicated(dewatered)]
+  
+  vertices$length[dewatered]
+  
   return(index[[1]])
 }

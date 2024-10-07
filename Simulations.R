@@ -87,7 +87,7 @@ shape_basin <- st_read("test/TestBasin.shp")
 shape_dams <- st_read("test/TestPoints.shp")
 
 #Let us filter to just one dam
-shape_dams <- shape_dams[shape_dams$DamId =='A' | shape_dams$DamId =='B',]
+shape_dams <- shape_dams[shape_dams$DamId =='A' | shape_dams$DamId =='B' | shape_dams$DamId =='D',]
 
 ggplot() +
   coord_fixed() +
@@ -179,7 +179,7 @@ dams_snapped_joined <- dams_snapped_reduced %>%
   group_by(cluster) %>%
   slice(1) %>%
   ungroup() %>%
-  mutate(id_dam = as.character(1:nrow(.)), pass_u = 0.5, pass_d = 0.8) %>%
+  mutate(id_dam = as.character(1:nrow(.)), pass_u = 0, pass_d = 0) %>%
   as.data.frame %>%
   st_as_sf() %>%
   st_join(., shape_river, join = st_is_within_distance, dist = 10 ) %>% 
@@ -218,10 +218,10 @@ ggplot() +
 network_links <- rbind(
   dams_snapped_joined %>% 
     mutate(type = "dam", id_barrier = id_dam) %>%
-    dplyr::select(type, id_barrier, pass_u, pass_d),
+    dplyr::select(type, id_barrier, pass_u, pass_d,Company),
   river_joins %>% mutate(type = "joint") %>%
     dplyr::select(type) %>%
-    mutate(id_barrier = NA, pass_u = NA, pass_d = NA) %>%
+    mutate(id_barrier = NA, pass_u = NA, pass_d = NA,Company = NA) %>%
     rename(geometry = x)) %>%
   mutate(id_links = 1:nrow(.))
 
@@ -302,8 +302,8 @@ river_net_simplified <- river_net_simplified %>%
   mutate(alt = catchment_DEM)
 
 # To avoid issues in the network creation process, retain only the important columns
-river_net_simplified <- river_net_simplified %>% 
-  dplyr::select(NodeID, length, alt, DIST_DN_KM, UPLAND_SKM)
+#river_net_simplified <- river_net_simplified %>% 
+#  dplyr::select(NodeID, length, alt, DIST_DN_KM, UPLAND_SKM)
 
 ggplot() +
   coord_fixed() +
@@ -321,7 +321,7 @@ ggplot() +
 
 #river_net_simplified$DIST_DN_KM[river_net_simplified$NodeID == 5] = 0
 
-#st_write(river_net_simplified, "test/river_net_simplified3.shp")
+#st_write(river_net_simplified, "test/river_net_simplified.shp")
 
 
 #outlet <- get_outlet(river_net_simplified, shape_basin, distance = 1)
@@ -330,6 +330,7 @@ outlet <- river_net_simplified$NodeID[river_net_simplified$DIST_DN_KM == 0 ]
 river_graph <- create_network(network_links, river_net_simplified, outlet)
 
 plot(river_graph)
+summary(river_graph)
 ?create_network
 
 # Check igraph object
@@ -370,43 +371,58 @@ index[[1]] <- index_calculation(graph = river_graph,
 index[[1]]
 ?index_calculation
 
-#for dam A
-(river_net_simplified$length[river_net_simplified$NodeID ==2] / sum(river_net_simplified$length))^2 + 
-  ((sum(river_net_simplified$length) - river_net_simplified$length[river_net_simplified$NodeID ==2]) /   sum(river_net_simplified$length))^2
+distances(river_graph,5,2)
+distance_table(river_graph, directed = TRUE)
+plot(river_graph)
 
-#for A and B dams
-(river_net_simplified$length[river_net_simplified$NodeID ==2] / sum(river_net_simplified$length))^2 + 
-  (river_net_simplified$length[river_net_simplified$NodeID ==3] / sum(river_net_simplified$length))^2 + 
-  ((sum(river_net_simplified$length) - river_net_simplified$length[river_net_simplified$NodeID ==3] - river_net_simplified$length[river_net_simplified$NodeID ==2]) /   sum(river_net_simplified$length))^2
+?nel2igraph()
 
 
+edge_attr(river_graph)
 
-?d_index_calculation
+vertex_attr(river_graph)
 
-barriers_metadata <- data.frame("id_barrier" =  E(river_graph)$id_barrier[!is.na(E(river_graph)$id_barrier)],
-                            "pass_u_updated" = 1,
-                            "pass_d_updated" = 1)
-head(barriers_metadata)
+?get.vertex.attribute
 
-d_index <- list()
-lab_d_index <- list()
-letter_d_index <- list()
+igraph::edge_attr(river_graph)[[1]][2]
+igraph::edge_attr(river_graph)[[2]][which(edge_attr(river_graph)$Company == "Sri")]
 
-lab_d_index[[9]] <- "CAFI"
-letter_d_index[[9]] <- "I"
-d_index[[9]] <- d_index_calculation(graph = river_graph,
-                                    barriers_metadata = barriers_metadata, 
-                                    weight = "UPLAND_SKM", 
-                                    dir_distance_type  = "symmetric",
-                                    B_ij_flag = FALSE,
-                                    parallel = FALSE)
-d_index[[9]]
+
+get.edge.ids(river_graph,c(3,1))
+igraph::edge_attr(river_graph)[[6]][get.edge.ids(river_graph,c(3,1))]
+igraph::edge_attr(river_graph)[[6]][get.edge.ids(river_graph,c(2,3))]
+
+which(edge_attr(river_graph)$Company == "Sri_dam")
+which(edge_attr(river_graph)$Company == "Sri_ph")
+
+get.data.frame(river_graph, what = "edges")
+get.data.frame(river_graph, what = "vertices")
+
+edges = get.data.frame(river_graph, what = "edges")
+vertices = get.data.frame(river_graph, what = "vertices")
 
 
 
+dewatered = as.numeric(edges$from[which(edge_attr(river_graph)$Company == "Sri")])
+dewatered = c(dewatered,as.numeric(edges$to[which(edge_attr(river_graph)$Company == "Sri")]))
+dewatered[duplicated(dewatered)]
+
+dewatered_len = vertices$length[dewatered[duplicated(dewatered)]]
+
+dewatered_DCP = (dewatered_len/sum(river_net_simplified$length))^2
+
+river_net_simplified$length_sq = river_net_simplified$length * river_net_simplified$length
+river_net_simplified$DCI = (river_net_simplified$length_sq)/(sum(river_net_simplified$length))^2
+
+DCI_withoutDewater = sum(river_net_simplified$length[c(1,4,6)])^2 / (sum(river_net_simplified$length))^2 + 
+  sum(river_net_simplified$DCI[c(2,3,5)])
+
+DCI_Dewater = sum(river_net_simplified$length[c(1,4,6)])^2 / (sum(river_net_simplified$length))^2 + 
+  sum(river_net_simplified$DCI[c(2,5)])
 
 
 #### index calculation #####
+
 graph = river_graph
 weight = "UPLAND_SKM"
 nodes_id = "name"
@@ -414,7 +430,7 @@ index_type = "full"
 index_mode = "to"
 c_ij_flag = TRUE
 B_ij_flag = TRUE
-dir_fragmentation_type = "symmetric" 
+dir_fragmentation_type = "asymmetric" 
 pass_confluence = 1
 pass_u = "pass_u"
 pass_d = "pass_d"
@@ -473,7 +489,11 @@ param_l
   if (disp_type == "leptokurtic") {
     param_u = param_d = param <- NA
   }
+
+
+
   igraph::V(graph)$name <- igraph::vertex_attr(graph, nodes_id)
+
   if (c_ij_flag == TRUE) {
     c_ij_mat <- c_ij_fun(graph, dir_fragmentation_type = dir_fragmentation_type, 
                          pass_confluence = pass_confluence, pass_u = pass_u, 
@@ -549,6 +569,15 @@ param_l
   }
   return(index)
 }
-<bytecode: 0x000002362960f810>
-  <environment: namespace:riverconn>
 
+  
+  
+  v1 = c("a","b")
+  v2 = c("ar","br")
+  weight = c(10,10)
+  
+  test_df = data.frame(v1, v2, weight)
+  g <- test_df %>% graph_from_data_frame(directed = TRUE)
+  
+  distances(g, "a", to="ar", mode = "out")
+  
