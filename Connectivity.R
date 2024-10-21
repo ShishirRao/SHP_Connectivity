@@ -93,7 +93,7 @@ shape_SHPs_PH <- st_read("Nethravathi/Nethravathi_SHPs_PH.shp")
 
 # remove SHPs on irrigation canals, tank outlets and offshore SHPs and keep only stand-alone (river) and multipurpose SHPs
 shape_SHPs = shape_SHPs[shape_SHPs$Sitatued.o == "river" | shape_SHPs$Sitatued.o == "part of bigger project",]
-
+shape_SHPs_PH$Comments = "Powerhouse"
 shape_SHPs_PH = shape_SHPs_PH[shape_SHPs_PH$Sitatued.o == "river" | shape_SHPs_PH$Sitatued.o == "part of bigger project",]
 
 
@@ -262,16 +262,31 @@ ggplot() +
   ggspatial::annotation_scale(location = "bl", style = "ticks") +
   labs(caption = "Hollow points are the position of the dams")
 
-nrow(dams_snapped_joined[dams_snapped_joined$Sitatued.o == "river_non_SHP",])
-nrow(dams_snapped_joined[dams_snapped_joined$Sitatued.o != "river_non_SHP",])
+nrow(dams_snapped_joined[dams_snapped_joined$Sitatued.o == "river_non_SHP",]) # large dams
+nrow(dams_snapped_joined[dams_snapped_joined$Sitatued.o != "river_non_SHP",]) # SHPs
 
-DCI_SHP = NetworkGenerate(dams_snapped_joined[dams_snapped_joined$Sitatued.o != "river_non_SHP",],shape_river_simple)
-DCI_Large = NetworkGenerate(dams_snapped_joined[dams_snapped_joined$Sitatued.o == "river_non_SHP",],shape_river_simple)
+#all the large dams
+DCI_Large = NetworkGenerate(dams_snapped_joined[dams_snapped_joined$Sitatued.o == "river_non_SHP",],shape_river_simple,"Large")
+
+#just the SHP weir
+DCI_SHP = NetworkGenerate(dams_snapped_joined[dams_snapped_joined$Sitatued.o != "river_non_SHP" &
+                                                dams_snapped_joined$Comments != "Powerhouse" | 
+                                                is.na(dams_snapped_joined$Comments),],shape_river_simple,"SHP")
+
+#SHP weir and ph = dewatering
+DCI_SHP_Dewater = NetworkGenerate(dams_snapped_joined[dams_snapped_joined$Sitatued.o != "river_non_SHP" |
+                                                        dams_snapped_joined$Comments == "Powerhouse",],shape_river_simple,"Dewater")
+
+
+# A function that returns the dewatered nodes for each SHP company
+DewateredNodes = function(vars){
+  dewatered = as.numeric(c(vars$from,vars$to))
+  dewatered = dewatered[duplicated(dewatered)]
+  return(dewatered)
+}
 
 # This function generates a network link for the set of dams. The dam set could be of different scenarios 1) SHP 2)large 3) dewatered )
-NetworkGenerate <- function(dams_snapped_joined,shape_river_simple){
-  
-  dams_snapped_joined = dams_snapped_joined[dams_snapped_joined$Sitatued.o != "river_non_SHP",]
+NetworkGenerate <- function(dams_snapped_joined,shape_river_simple,type){
 
   # Create junction point shapefile
   network_links <- rbind(
@@ -378,7 +393,7 @@ NetworkGenerate <- function(dams_snapped_joined,shape_river_simple){
   ?layer_spatial
   
   #st_write(network_links, "Nethravathi/network_links.shp")
-  #st_write(river_net_simplified, "Nethravathi/river_net_simplified_Dewatered.shp")
+  #st_write(river_net_simplified, "Nethravathi/river_net_simplified.shp",delete_layer = TRUE)
 
   # this won't work because not all rivers drain to the sea. Some are sub-basins
   #outlet <- river_net_simplified$NodeID[river_net_simplified$DIST_DN_KM == 0 ] 
@@ -438,8 +453,7 @@ NetworkGenerate <- function(dams_snapped_joined,shape_river_simple){
   
   # update length attribute
   V(river_graph)$name <- as.character(V(river_graph)$name)
-  
-  
+
   # Initialize list where to store all the index calculation outputs
   index <- list()
   lab_index <- list()
@@ -455,16 +469,27 @@ NetworkGenerate <- function(dams_snapped_joined,shape_river_simple){
                                   index_type = "full",
                                   index_mode = "from")
   
-  index[[1]]
-  
-  edges = get.data.frame(river_graph, what = "edges")
-  vertices = get.data.frame(river_graph, what = "vertices")
-  
-  dewatered = as.numeric(edges$from[which(!is.na(edge_attr(river_graph)$Company))])
-  dewatered = c(dewatered,as.numeric(edges$to[which(!is.na(edge_attr(river_graph)$Company))]))
-  dewatered = dewatered[duplicated(dewatered)]
-  
-  vertices$length[dewatered]
-  
+  if(type == "Dewater"){
+      edges = get.data.frame(river_graph, what = "edges")
+      vertices = get.data.frame(river_graph, what = "vertices")
+      
+      dewatered = as.numeric(edges$from[!is.na(edge_attr(river_graph)$Company)])
+      dewatered = c(dewatered,as.numeric(edges$to[!is.na(edge_attr(river_graph)$Company)]))
+      dewatered = dewatered[duplicated(dewatered)]
+      
+      edges_split = split(edges %>% select(-Company),edges$Company)
+      dewatered = lapply(edges_split,DewateredNodes)
+      dewatered = as.numeric(sapply(dewatered, function(x){as.numeric(x[1])}))
+      dewatered = dewatered[!is.na(dewatered)]
+      
+      river_net_simplified$length_sq = river_net_simplified$length * river_net_simplified$length
+      river_net_simplified$DCI = (river_net_simplified$length_sq)/(sum(river_net_simplified$length))^2
+      
+      index[[1]][3] =   index[[1]][3] - as.numeric(sum(river_net_simplified$DCI[c(dewatered)]))
+    }
+
   return(index[[1]])
 }
+
+
+
