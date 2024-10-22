@@ -25,7 +25,7 @@ shape_river <- st_read("Nethravathi/Nethravathi_river.shp")
 shape_river <- st_read("Nethravathi/Nethravathi_river_V2.shp")
 shape_basin <- st_read("Nethravathi/Nethravathi_wshed.shp")
 shape_SHPs <- st_read("Nethravathi/Nethravathi_SHPs.shp")
-shape_SHPs_PH <- st_read("Nethravathi/Nethravathi_SHPs_PH.shp")
+shape_SHPs_PH <- st_read("Nethravathi/Nethravathi_PH.shp")
 
 
 #shape_river <- st_read("Kaveri/Kaveri_river.shp")

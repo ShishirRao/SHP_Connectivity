@@ -23,13 +23,14 @@ library(rlist)
 # for each basin, extract the basin name, and pass river, dam and wshed shape file to index calculation function
 collate <- function(basin_vars){
   
-  #basin_vars = g[29][[1]]
+  #basin_vars = g[3][[1]]
   basin_name <- sub("(.+?)(\\_.*)", "\\1", basin_vars[1])
   
   # parse through file names to detect river, wshed and dam files
   river_file = basin_vars[which(as.numeric(grepl('river', basin_vars)) == 1)]
   wshed_file = basin_vars[which(as.numeric(grepl('wshed', basin_vars)) == 1)]
   SHP_file = basin_vars[which(as.numeric(grepl('SHPs', basin_vars)) == 1)]
+  SHP_PH_file = basin_vars[which(as.numeric(grepl('PH', basin_vars)) == 1)]
   LargeDams_file = basin_vars[which(as.numeric(grepl('LargeDams', basin_vars)) == 1)]
   
   #data.frame(name = c("A1","A2"), index = c(as.numeric(1),as.numeric(2)),type = c("SHPs","LargeDams"))
@@ -37,9 +38,9 @@ collate <- function(basin_vars){
   #if dam files are missing, then return here itself
   if (rlang::is_empty(SHP_file) & rlang::is_empty(LargeDams_file)){
     print(paste(basin_name,"no dams found"))
-    return(data.frame(name = c(basin_name,basin_name),
-                      index = c(as.numeric(1),as.numeric(1)),
-                      type = c("SHPs","LargeDams")))  
+    return(data.frame(name = c(basin_name,basin_name,basin_name),
+                      index = c(as.numeric(1),as.numeric(1),as.numeric(1)),
+                      type = c("SHPs","LargeDams","Dewater")))  
   }
   
   # read shape files
@@ -47,33 +48,55 @@ collate <- function(basin_vars){
   shape_basin <- st_read(wshed_file)
   
   #clear the results variable
-  res1 = res2 = NULL
+  res1 = res2 = res3 =  NULL
   
   if (!rlang::is_empty(SHP_file)){ # if SHP shape file is not empty, then read it
     shape_SHPs <- st_read(SHP_file)
     # ignore irrigation canal SHPs
     shape_SHPs = shape_SHPs[shape_SHPs$Sitatued.o == "river" | shape_SHPs$Sitatued.o == "part of bigger project",]
-    res1 = index_calc_wrapper(basin_name,shape_river,shape_SHPs,shape_basin)
+    res1 = index_calc_wrapper(basin_name,shape_river,shape_SHPs,shape_basin,"SHP")
     #res1 = data.frame(basin_name,index = 20)
     res1 = cbind(res1,type = "SHPs")
     print(res1)
+  }
+  
+  if (!rlang::is_empty(SHP_PH_file)){ # if PH shape file is not empty, then read it
+    shape_SHPs_PH <- st_read(SHP_PH_file)
+    shape_SHPs_PH$Comments = "Powerhouse"
+    shape_SHPs_PH = shape_SHPs_PH[shape_SHPs_PH$Sitatued.o == "river" | shape_SHPs_PH$Sitatued.o == "part of bigger project",]
+    shape_SHPs_PH = bind_rows(list(shape_SHPs,shape_SHPs_PH))
+    res2 = index_calc_wrapper(basin_name,shape_river,shape_SHPs_PH,shape_basin,"Dewater")
+    res2 = cbind(res2,type = "Dewater")
+    print(res2)
   }
   
   if (!rlang::is_empty(LargeDams_file)){
     shape_Large_dams <- st_read(LargeDams_file)
     #send river, wshed and dame file names to be read and for calculating index
     shape_Large_dams$Sitatued.o = "river_non_SHP"
-    res2 = index_calc_wrapper(basin_name,shape_river,shape_Large_dams,shape_basin)
-    #res2 = data.frame(basin_name,index = 30)
-    res2 = cbind(res2,type = "LargeDams")
+    shape_Large_dams$Company = "Large Hydro"
+    res3 = index_calc_wrapper(basin_name,shape_river,shape_Large_dams,shape_basin,"Large")
+    res3 = cbind(res2,type = "LargeDams")
     print(res2)
   }
-  return(rbind(res1,res2))
+  
+  ?rbind
+  return(rbind(res1,res2,res3))
 }
 
 
-# this function takes basin name, river_file, dam_file, wshed_file as inputs and returns network stats as a list
-index_calc_wrapper <- function(name, shape_river, shape_dams, shape_basin){  
+# A function that returns the dewatered nodes for each SHP company. This is only for 
+# calculating the effects of dewatering on connectivity
+DewateredNodes = function(vars){
+  dewatered = as.numeric(c(vars$from,vars$to))
+  dewatered = dewatered[duplicated(dewatered)]
+  return(dewatered)
+}
+
+
+# this function takes basin name, river_file, dam_file, wshed_file and type == SHP or large or dewatering
+# as inputs and returns network stats as a list
+index_calc_wrapper <- function(name, shape_river, shape_dams, shape_basin,type){  
   
   #shape_dams = shape_Large_dams
   #shape_dams = shape_SHPs
@@ -177,15 +200,16 @@ index_calc_wrapper <- function(name, shape_river, shape_dams, shape_basin){
     head(headwaters_checking$flag_headwater)
     
   # Create junction point shapefile
+    
   network_links <- rbind(
-    dams_snapped_joined %>% 
-      mutate(type = "dam", id_barrier = id_dam) %>%
-      dplyr::select(type, id_barrier, pass_u, pass_d),
-    river_joins %>% mutate(type = "joint") %>%
-      dplyr::select(type) %>%
-      mutate(id_barrier = NA, pass_u = NA, pass_d = NA) %>%
-      rename(geometry = x)) %>%
-    mutate(id_links = 1:nrow(.))
+      dams_snapped_joined %>% 
+        mutate(type = "dam", id_barrier = id_dam) %>%
+        dplyr::select(type, id_barrier, pass_u, pass_d,Company),
+      river_joins %>% mutate(type = "joint") %>%
+        dplyr::select(type) %>%
+        mutate(id_barrier = NA, pass_u = NA, pass_d = NA,Company = NA) %>%
+        rename(geometry = x)) %>%
+      mutate(id_links = 1:nrow(.))
   
   # Split river network
   river_net_simplified <- lwgeom::st_split(shape_river_simple, network_links) %>%
@@ -280,8 +304,26 @@ index_calc_wrapper <- function(name, shape_river, shape_dams, shape_basin){
                                   index_type = "full",
                                   index_mode = "from")
   
+  if(type == "Dewater"){
+    edges = get.data.frame(river_graph, what = "edges")
+    vertices = get.data.frame(river_graph, what = "vertices")
     
-    return(data.frame(name = name, DCIp = index[[1]][3]))
+    dewatered = as.numeric(edges$from[!is.na(edge_attr(river_graph)$Company)])
+    dewatered = c(dewatered,as.numeric(edges$to[!is.na(edge_attr(river_graph)$Company)]))
+    dewatered = dewatered[duplicated(dewatered)]
+    
+    edges_split = split(edges %>% select(-Company),edges$Company)
+    dewatered = lapply(edges_split,DewateredNodes)
+    dewatered = as.numeric(sapply(dewatered, function(x){as.numeric(x[1])}))
+    dewatered = dewatered[!is.na(dewatered)]
+    
+    river_net_simplified$length_sq = river_net_simplified$length * river_net_simplified$length
+    river_net_simplified$DCI = (river_net_simplified$length_sq)/(sum(river_net_simplified$length))^2
+    
+    index[[1]][3] =   index[[1]][3] - as.numeric(sum(river_net_simplified$DCI[c(dewatered)]))
+  }
+    
+  return(data.frame(name = name, DCIp = index[[1]][3]))
 }
 
 #read shapefile, make a list of file names grouped basin-wise
@@ -294,12 +336,14 @@ g <- sub("(.+?)(\\_.*)", "\\1", filenames)
 g <- split(filenames, g)
 g
 
-g[30]
+
+g[17]
+
 
 listofres = NULL
 #call function to loop through each basin calculating DCI
 listofres = lapply(g,collate)
-#listofres = lapply(g[30],collate)
+listofres = lapply(g[17],collate)
 out.df <- (do.call("rbind", listofres))
 out.df <- out.df %>% `rownames<-`(seq_len(nrow(out.df)))
 names(out.df) <- c("Basin_name","DCIp","Type")

@@ -88,6 +88,7 @@ shape_dams <- st_read("test/TestPoints.shp")
 
 #Let us filter to just one dam
 shape_dams <- shape_dams[shape_dams$DamId =='A' | shape_dams$DamId =='B' | shape_dams$DamId =='D',]
+shape_dams <- shape_dams[shape_dams$DamId =='A' | shape_dams$DamId =='D',]
 
 ggplot() +
   coord_fixed() +
@@ -401,11 +402,9 @@ get.data.frame(river_graph, what = "vertices")
 edges = get.data.frame(river_graph, what = "edges")
 vertices = get.data.frame(river_graph, what = "vertices")
 
-
-
-dewatered = as.numeric(edges$from[which(edge_attr(river_graph)$Company == "Sri")])
-dewatered = c(dewatered,as.numeric(edges$to[which(edge_attr(river_graph)$Company == "Sri")]))
-dewatered[duplicated(dewatered)]
+dewatered = as.numeric(edges$from[!is.na(edge_attr(river_graph)$Company)])
+dewatered = c(dewatered,as.numeric(edges$to[!is.na(edge_attr(river_graph)$Company)]))
+dewatered = dewatered[duplicated(dewatered)]
 
 dewatered_len = vertices$length[dewatered[duplicated(dewatered)]]
 
@@ -417,8 +416,10 @@ river_net_simplified$DCI = (river_net_simplified$length_sq)/(sum(river_net_simpl
 DCI_withoutDewater = sum(river_net_simplified$length[c(1,4,6)])^2 / (sum(river_net_simplified$length))^2 + 
   sum(river_net_simplified$DCI[c(2,3,5)])
 
-DCI_Dewater = sum(river_net_simplified$length[c(1,4,6)])^2 / (sum(river_net_simplified$length))^2 + 
+DCI_Dewater1 = sum(river_net_simplified$length[c(1,4,6)])^2 / (sum(river_net_simplified$length))^2 + 
   sum(river_net_simplified$DCI[c(2,5)])
+
+DCI_Dewater2 = DCI_withoutDewater - river_net_simplified$DCI[c(dewatered)]
 
 
 #### index calculation #####
