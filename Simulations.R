@@ -88,7 +88,11 @@ shape_dams <- st_read("test/TestPoints.shp")
 
 #Let us filter to just one dam
 shape_dams <- shape_dams[shape_dams$DamId =='A' | shape_dams$DamId =='B' | shape_dams$DamId =='D',]
-shape_dams <- shape_dams[shape_dams$DamId =='A' | shape_dams$DamId =='D',]
+#shape_dams <- shape_dams[shape_dams$DamId =='A' | shape_dams$DamId =='D',]
+
+#shape_river <- shape_river[-23,]
+
+
 
 ggplot() +
   coord_fixed() +
@@ -215,14 +219,15 @@ ggplot() +
   labs(caption = "Hollow points are the position of the dams")
 
 
+
 # Create junction point shapefile
 network_links <- rbind(
   dams_snapped_joined %>% 
     mutate(type = "dam", id_barrier = id_dam) %>%
-    dplyr::select(type, id_barrier, pass_u, pass_d,Company),
+    dplyr::select(type, id_barrier, pass_u, pass_d,Company,Comments),
   river_joins %>% mutate(type = "joint") %>%
     dplyr::select(type) %>%
-    mutate(id_barrier = NA, pass_u = NA, pass_d = NA,Company = NA) %>%
+    mutate(id_barrier = NA, pass_u = NA, pass_d = NA,Company = NA,Comments = NA) %>%
     rename(geometry = x)) %>%
   mutate(id_links = 1:nrow(.))
 
@@ -322,7 +327,7 @@ ggplot() +
 
 #river_net_simplified$DIST_DN_KM[river_net_simplified$NodeID == 5] = 0
 
-#st_write(river_net_simplified, "test/river_net_simplified.shp")
+#st_write(river_net_simplified, "test/river_net_simplified4.shp")
 
 
 #outlet <- get_outlet(river_net_simplified, shape_basin, distance = 1)
@@ -369,7 +374,7 @@ index[[1]] <- index_calculation(graph = river_graph,
                                 B_ij_flag = FALSE,
                                 index_type = "full",
                                 index_mode = "from")
-index[[1]]
+index[[1]][3]
 ?index_calculation
 
 distances(river_graph,5,2)
@@ -407,8 +412,14 @@ dewatered = c(dewatered,as.numeric(edges$to[!is.na(edge_attr(river_graph)$Compan
 dewatered = dewatered[duplicated(dewatered)]
 
 dewatered_len = vertices$length[dewatered[duplicated(dewatered)]]
-
 dewatered_DCP = (dewatered_len/sum(river_net_simplified$length))^2
+
+
+edges_split = split(edges %>% select(-Company),edges$Company)
+dewatered = lapply(edges_split,DewateredNodes)
+#dewatered = as.numeric(sapply(dewatered, function(x){as.numeric(x[2])}))
+dewatered = unlist(dewatered, use.names = F)
+dewatered = dewatered[!is.na(dewatered)]
 
 river_net_simplified$length_sq = river_net_simplified$length * river_net_simplified$length
 river_net_simplified$DCI = (river_net_simplified$length_sq)/(sum(river_net_simplified$length))^2
@@ -419,18 +430,35 @@ DCI_withoutDewater = sum(river_net_simplified$length[c(1,4,6)])^2 / (sum(river_n
 DCI_Dewater1 = sum(river_net_simplified$length[c(1,4,6)])^2 / (sum(river_net_simplified$length))^2 + 
   sum(river_net_simplified$DCI[c(2,5)])
 
-DCI_Dewater2 = DCI_withoutDewater - river_net_simplified$DCI[c(dewatered)]
+#DCI_Dewater2 = DCI_withoutDewater - sum(river_net_simplified$DCI[c(3,5)])
+
+
+## for the tributary in between dam and power house
+# this is how the RiverConn calculates
+sum(river_net_simplified$length[c(3,5,7)])^2 / (sum(river_net_simplified$length))^2 + 
+#isolated dam segments
+sum(river_net_simplified$DCI[c(2,6)])+
+#segments in between dams / ph but has a tributary
+sum(river_net_simplified$length[c(1,4,8)])^2 / (sum(river_net_simplified$length))^2
+
+#This is what we want
+# 1. find out what flows in to the dewatered stretch. That is the id link of the tributary
+sum(river_net_simplified$length[c(3,5,7)])^2 / (sum(river_net_simplified$length))^2 + 
+sum(river_net_simplified$DCI[c(2,6)])+
+
+
+
 
 
 #### index calculation #####
-
+?index_calculation
 graph = river_graph
-weight = "UPLAND_SKM"
+weight = "length"
 nodes_id = "name"
 index_type = "full"
-index_mode = "to"
+index_mode = "from"
 c_ij_flag = TRUE
-B_ij_flag = TRUE
+B_ij_flag = FALSE
 dir_fragmentation_type = "asymmetric" 
 pass_confluence = 1
 pass_u = "pass_u"
@@ -442,6 +470,13 @@ param_u
 param_d
 param
 param_l
+
+graph = river_graph
+weight = "length"
+c_ij_flag = TRUE
+B_ij_flag = FALSE
+index_type = "full"
+index_mode = "from"
 
 
 
@@ -518,7 +553,8 @@ param_l
                                                      what = "vertices"), ~"weight_node", contains(weight))
   v_weights <- g_v_df$weight_node
   if (index_type == "full") {
-    index_num = t(v_weights) %*% agg_mat %*% v_weights
+    index_num = t(v_weights) %*% agg_mat 
+    index_num = index_num %*% v_weights
     index_den = sum(v_weights)^2
     index = index_num/index_den
     index <- data.frame(num = index_num, den = index_den, 
