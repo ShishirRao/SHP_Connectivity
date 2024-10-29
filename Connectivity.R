@@ -283,6 +283,7 @@ DCI_SHP_Dewater = NetworkGenerate(dams_snapped_joined[dams_snapped_joined$Sitatu
 # A function that returns the dewatered nodes for each SHP company
 DewateredNodes = function(vars){
   
+  vars = edges_split[[2]]
   # each SHP company should have a weir and Ph location, i.e it has to have two rows. If not, there 
   # isn't a dewatered stretch
   dewatered = as.numeric(NA) # initialization
@@ -296,6 +297,8 @@ DewateredNodes = function(vars){
     if(length(dewatered) == 0){
       dewatered = as.numeric(c(vars$from[which(vars$Comments == "Powerhouse")],
                              vars$to[which(vars$Comments != "Powerhouse" | is.na(vars$Comments))]))
+      
+      tributary = vars$to[which(vars$Comments == "Powerhouse")]
     }
   }
   return(dewatered)
