@@ -83,8 +83,10 @@ l2 = 0
 
 #shape_river <- st_read("test/TestRiver.shp")
 shape_river <- st_read("test/TestRiver_split.shp")
+#shape_river <- st_read("test/TestRiver_split_v3.shp")
 shape_basin <- st_read("test/TestBasin.shp")
 shape_dams <- st_read("test/TestPoints.shp")
+#shape_dams <- st_read("test/TestPoints_v3.shp")
 
 #Let us filter to just one dam
 shape_dams <- shape_dams[shape_dams$DamId =='A' | shape_dams$DamId =='B' | shape_dams$DamId =='D',]
@@ -327,7 +329,7 @@ ggplot() +
 
 #river_net_simplified$DIST_DN_KM[river_net_simplified$NodeID == 5] = 0
 
-#st_write(river_net_simplified, "test/river_net_simplified4.shp")
+#st_write(river_net_simplified, "test/river_net_simplified5.shp")
 
 
 #outlet <- get_outlet(river_net_simplified, shape_basin, distance = 1)
@@ -374,64 +376,46 @@ index[[1]] <- index_calculation(graph = river_graph,
                                 B_ij_flag = FALSE,
                                 index_type = "full",
                                 index_mode = "from")
-index[[1]][3]
-?index_calculation
 
-distances(river_graph,5,2)
-distance_table(river_graph, directed = TRUE)
-plot(river_graph)
-
-?nel2igraph()
-
-
-edge_attr(river_graph)
-
-vertex_attr(river_graph)
-
-?get.vertex.attribute
-
-igraph::edge_attr(river_graph)[[1]][2]
-igraph::edge_attr(river_graph)[[2]][which(edge_attr(river_graph)$Company == "Sri")]
-
-
-get.edge.ids(river_graph,c(3,1))
-igraph::edge_attr(river_graph)[[6]][get.edge.ids(river_graph,c(3,1))]
-igraph::edge_attr(river_graph)[[6]][get.edge.ids(river_graph,c(2,3))]
-
-which(edge_attr(river_graph)$Company == "Sri_dam")
-which(edge_attr(river_graph)$Company == "Sri_ph")
-
-get.data.frame(river_graph, what = "edges")
-get.data.frame(river_graph, what = "vertices")
 
 edges = get.data.frame(river_graph, what = "edges")
 vertices = get.data.frame(river_graph, what = "vertices")
 
-dewatered = as.numeric(edges$from[!is.na(edge_attr(river_graph)$Company)])
-dewatered = c(dewatered,as.numeric(edges$to[!is.na(edge_attr(river_graph)$Company)]))
-dewatered = dewatered[duplicated(dewatered)]
 
-dewatered_len = vertices$length[dewatered[duplicated(dewatered)]]
-dewatered_DCP = (dewatered_len/sum(river_net_simplified$length))^2
+#create a blank category
+edges_split = split(edges %>% select(-Company),edges$Company,drop=FALSE)
+result = lapply(edges_split,DewateredNodes_TributaryFinder)
 
-
-edges_split = split(edges %>% select(-Company),edges$Company)
-dewatered = lapply(edges_split,DewateredNodes)
-#dewatered = as.numeric(sapply(dewatered, function(x){as.numeric(x[2])}))
-dewatered = unlist(dewatered, use.names = F)
+dewatered = unlist(lapply(result, `[[`, 1), use.names = F)
 dewatered = dewatered[!is.na(dewatered)]
+
+party_dewatered = unlist(lapply(result, `[[`, 2), use.names = F)
+party_dewatered = party_dewatered[!is.na(party_dewatered)]
+
+dwnstream_party_dew = unlist(lapply(result, `[[`, 3), use.names = F)
+dwnstream_party_dew = dwnstream_party_dew[!is.na(dwnstream_party_dew)]
+
+free_trib = unlist(lapply(result, `[[`, 4), use.names = F)
+free_trib = free_trib[!is.na(free_trib)]
 
 river_net_simplified$length_sq = river_net_simplified$length * river_net_simplified$length
 river_net_simplified$DCI = (river_net_simplified$length_sq)/(sum(river_net_simplified$length))^2
 
-DCI_withoutDewater = sum(river_net_simplified$length[c(1,4,6)])^2 / (sum(river_net_simplified$length))^2 + 
-  sum(river_net_simplified$DCI[c(2,3,5)])
+DCI_withoutDewater = sum(river_net_simplified$length[c(1,4,5,7,8)])^2 / (sum(river_net_simplified$length))^2 + 
+  sum(river_net_simplified$DCI[c(2,3,6)])
 
-DCI_Dewater1 = sum(river_net_simplified$length[c(1,4,6)])^2 / (sum(river_net_simplified$length))^2 + 
-  sum(river_net_simplified$DCI[c(2,5)])
+DCI_Dewater1 = sum(river_net_simplified$length[c(1,4,5,7,8)])^2 / (sum(river_net_simplified$length))^2 + 
+  sum(river_net_simplified$DCI[c(2,6)])
 
-#DCI_Dewater2 = DCI_withoutDewater - sum(river_net_simplified$DCI[c(3,5)])
+DCI_Dewater2 = as.numeric(DCI_withoutDewater) - as.numeric(sum(river_net_simplified$DCI[c(dewatered)]))
 
+
+index[[1]] <- index_calculation(graph = river_graph,
+                                weight = "length",
+                                c_ij_flag = TRUE,
+                                B_ij_flag = FALSE,
+                                index_type = "full",
+                                index_mode = "from")
 
 ## for the tributary in between dam and power house
 # this is how the RiverConn calculates
@@ -443,178 +427,53 @@ sum(river_net_simplified$length[c(1,4,8)])^2 / (sum(river_net_simplified$length)
 
 #This is what we want
 # 1. find out what flows in to the dewatered stretch. That is the id link of the tributary
-sum(river_net_simplified$length[c(3,5,7)])^2 / (sum(river_net_simplified$length))^2 + 
-sum(river_net_simplified$DCI[c(2,6)])+
+
+#connected free segments
+sum(river_net_simplified$length[c(3,5,7,4,8)])^2 / (sum(river_net_simplified$length))^2 + 
+# isolated dam segments
+sum(river_net_simplified$DCI[c(2,6)])
+# fully dewatered stretch is 1 which we ignore
+# the only missing component is introducing reduced flow in stretch 4. 
 
 
-
-
-
-#### index calculation #####
-?index_calculation
-graph = river_graph
-weight = "length"
-nodes_id = "name"
-index_type = "full"
-index_mode = "from"
-c_ij_flag = TRUE
-B_ij_flag = FALSE
-dir_fragmentation_type = "asymmetric" 
-pass_confluence = 1
-pass_u = "pass_u"
-pass_d = "pass_d"
-field_B = "length"
-dir_distance_type = "symmetric"
-disp_type = "exponential"
-param_u
-param_d
-param
-param_l
-
-graph = river_graph
-weight = "length"
-c_ij_flag = TRUE
-B_ij_flag = FALSE
-index_type = "full"
-index_mode = "from"
-
-
-
-  if (!igraph::is_igraph(graph)) 
-    stop("'graph' must be an 'igraph' object")
-  if (!(index_type %in% c("full", "reach", "sum"))) 
-    stop("'index_type' must me either 'full', 'reach', or 'sum'")
-  if (index_type == "reach" & !(index_mode %in% c("from", "to"))) 
-    stop("'index_mode' must me either 'from' or 'to'")
-  if (index_type == "reach" & missing(index_mode)) 
-    stop("'index_mode' must me defined when index_type = 'reach'")
-  if (!(weight %in% igraph::vertex_attr_names(graph))) 
-    stop("'weight' argument must be a valid vertex attribute in 'graph'")
-  if (!(nodes_id %in% igraph::vertex_attr_names(graph))) 
-    stop("'nodes_id' argument must be a valid vertex attribute in 'graph'")
-  if (!(c_ij_flag | B_ij_flag)) 
-    stop("at least one among c_if and B_ij should be selected for calculations")
-  if (length(igraph::vertex_attr(graph, nodes_id)) < igraph::gorder(graph)) 
-    stop("'nodes_id' must be unique for each vertex")
-  if (!igraph::is_connected(graph)) 
-    stop("'graph' must be connected (check if some nodes are disconnected with igraph::components() )")
-  if ((dir_fragmentation_type == "asymmetric" | dir_distance_type == 
-       "asymmetric") & igraph::is_directed(graph) == FALSE) 
-    stop("'graph' must be directed when 'dir_fragmentation_type' or 'dir_distance_type' are set to 'asymmetric'")
-  if (weight %in% igraph::edge_attr_names(graph)) 
-    stop("'weight' argument must be a edge attribute in 'graph'")
-  if (field_B %in% igraph::edge_attr_names(graph)) 
-    stop("'field_B' argument must be a edge attribute in 'graph'")
-  if (!is.character(igraph::get.vertex.attribute(graph, nodes_id))) 
-    stop("'nodes_id' attribute of 'graph' must be of type 'charachter'")
-  if (c_ij_flag == TRUE) {
-    if (!(pass_u %in% igraph::edge_attr_names(graph))) 
-      stop("'pass_u' argument must be a edge attribute in 'graph'")
-    if (!(pass_d %in% igraph::edge_attr_names(graph))) 
-      stop("'pass_d' argument must be a edge attribute in 'graph'")
-  }
-  if (B_ij_flag == FALSE) {
-    param_u = param_d = param = param_l <- NA
-  }
-  if (dir_distance_type == "symmetric") {
-    param_u = param_d <- NA
-  }
-  if (dir_distance_type == "asymmetric") {
-    param <- NA
-  }
-  if (disp_type == "leptokurtic") {
-    param_u = param_d = param <- NA
-  }
-
-
-
-  igraph::V(graph)$name <- igraph::vertex_attr(graph, nodes_id)
-
-  if (c_ij_flag == TRUE) {
-    c_ij_mat <- c_ij_fun(graph, dir_fragmentation_type = dir_fragmentation_type, 
-                         pass_confluence = pass_confluence, pass_u = pass_u, 
-                         pass_d = pass_d)
-  }
-  if (B_ij_flag == TRUE) {
-    B_ij_mat <- B_ij_fun(graph, field_B = field_B, dir_distance_type = dir_distance_type, 
-                         disp_type = disp_type, param_u = param_u, param_d = param_d, 
-                         param = param, param_l = param_l)
-  }
-  if (c_ij_flag == TRUE & B_ij_flag == TRUE) {
-    agg_mat <- c_ij_mat * B_ij_mat
-  }
-  if (c_ij_flag == TRUE & B_ij_flag == FALSE) {
-    agg_mat <- c_ij_mat
-  }
-  if (c_ij_flag == FALSE & B_ij_flag == TRUE) {
-    agg_mat <- B_ij_mat
-  }
-  g_v_df <- dplyr::rename_with(igraph::as_data_frame(graph, 
-                                                     what = "vertices"), ~"weight_node", contains(weight))
-  v_weights <- g_v_df$weight_node
-  if (index_type == "full") {
-    index_num = t(v_weights) %*% agg_mat 
-    index_num = index_num %*% v_weights
-    index_den = sum(v_weights)^2
-    index = index_num/index_den
-    index <- data.frame(num = index_num, den = index_den, 
-                        index = index)
-  }
-  if (index_type == "reach") {
-    if (index_mode == "to") {
-      index_num = agg_mat %*% v_weights
-    }
-    if (index_mode == "from") {
-      index_num = t(t(v_weights) %*% agg_mat)
-    }
-    index_den = sum(v_weights)
-    index = index_num/index_den
-    index = data.frame(name = igraph::V(graph)$name, num = index_num, 
-                       den = index_den, index = index) %>% dplyr::rename_with(~nodes_id, 
-                                                                              contains("name"))
-  }
-  if (index_type == "sum") {
-    if (!("type" %in% igraph::edge_attr_names(graph))) 
-      stop("the graph's edges must contain the 'type' attribute with labels 'dam' or\n      'link' depending on the role of the edge (barrier or confluence).\n      Essential to calculate CAFI properly.")
-    igraph::E(graph)$pass_u <- igraph::get.edge.attribute(graph, 
-                                                          pass_u)
-    igraph::E(graph)$pass_d <- igraph::get.edge.attribute(graph, 
-                                                          pass_d)
-    igraph::E(graph)$pass_u <- ifelse(is.na(igraph::E(graph)$pass_u), 
-                                      pass_confluence, igraph::E(graph)$pass_u)
-    igraph::E(graph)$pass_d <- ifelse(is.na(igraph::E(graph)$pass_d), 
-                                      pass_confluence, igraph::E(graph)$pass_d)
-    if (dir_fragmentation_type == "symmetric") {
-      igraph::E(graph)$pass <- igraph::E(graph)$pass_d * 
-        igraph::E(graph)$pass_u
-    }
-    if (dir_fragmentation_type == "asymmetric" & index_mode == 
-        "to") {
-      igraph::E(graph)$pass <- igraph::E(graph)$pass_d
-    }
-    if (dir_fragmentation_type == "asymmetric" & index_mode == 
-        "from") {
-      igraph::E(graph)$pass <- igraph::E(graph)$pass_u
-    }
-    g_v_df <- dplyr::rename_with(igraph::as_data_frame(graph, 
-                                                       what = "vertices"), ~"weight_node", contains(weight))
-    g_e_df <- igraph::as_data_frame(graph, what = "edges") %>% 
-      dplyr::filter(.data$type == "dam") %>% dplyr::mutate(pass = 1 - 
-                                                             .data$pass) %>% dplyr::select(.data$from, .data$pass) %>% 
-      dplyr::rename(name = .data$from) %>% dplyr::left_join(g_v_df)
-    index = sum(g_e_df$pass * g_e_df$weight_node/max(g_v_df$weight_node))
-  }
-  return(index)
-}
 
   
+
   
-  v1 = c("a","b")
-  v2 = c("ar","br")
-  weight = c(10,10)
-  
-  test_df = data.frame(v1, v2, weight)
-  g <- test_df %>% graph_from_data_frame(directed = TRUE)
-  
-  distances(g, "a", to="ar", mode = "out")
-  
+  # A function that returns the dewatered nodes for each SHP company
+  DewateredNodes_TributaryFinder = function(vars){
+    
+    #vars = edges_split[[2]]
+    # each SHP company should have a weir and Ph location, i.e it has to have two rows. If not, there 
+    # isn't a dewatered stretch
+    dewatered = as.numeric(NA) # initialization
+    tributary = as.numeric(NA)
+    partly_dewatered = as.numeric(NA)
+    dwnstream_party_dew = as.numeric(NA)
+    
+    if(nrow(vars) == 2){
+      dewatered = as.numeric(c(vars$from,vars$to))
+      dewatered = dewatered[duplicated(dewatered)]
+      
+      # if there isn't a common node between dam and the ph, it means there is a tributary joining.
+      # in case send both the from and to nodes back to the calling function
+      if(length(dewatered) == 0){
+        # this is the stretch immediately downstream of the dam
+        dewatered = as.numeric(vars$to[which(vars$Comments != "Powerhouse" | is.na(vars$Comments))])
+        
+        #this is the part of dewatered stretch downstream of the tributary joining
+        partly_dewatered = as.numeric(vars$from[which(vars$Comments == "Powerhouse")])
+        
+        dwnstream_party_dew = as.numeric(vars$to[which(vars$Comments == "Powerhouse")])
+        
+        # the tributary joining the dewatered stretch
+        tributary = as.numeric(edges$from[which(edges$to == (edges$from[which(edges$Comments == "Powerhouse")]))])
+        tributary = tributary[!(tributary %in% dewatered)]
+        }
+    }
+    return(data.frame(dewatered = dewatered,partly_dewatered = partly_dewatered,
+                      dwnstream_party_dew = dwnstream_party_dew,free_trib = tributary))
+  }
+
+
+

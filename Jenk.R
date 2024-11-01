@@ -406,11 +406,38 @@ if (index_type == "full") {
   index_num = index_num %*% v_weights
   
   
-  agg_mat_dew[dewatered[1],dewatered[1]] = 0
-  agg_mat_dew[dewatered[1],dewatered[2]] = agg_mat_dew[dewatered[2],dewatered[1]] = 0
-  agg_mat_dew[dewatered[1],dewatered[3]] = agg_mat_dew[dewatered[3],dewatered[1]] = 0
-  agg_mat_dew[dewatered[1],dewatered[3]] = agg_mat_dew[dewatered[3],dewatered[1]] = 0
-  agg_mat_dew[3,4] = agg_mat_dew[4,3]= 1
+  #This is always true. Make the dewatered stretch(es) Cij = 0
+  if(length(dewatered) >= 1){
+    #dewatered stretch can't be connected to any other stretch. 
+    #So make the Cij of everything connected to that stretch = 0
+    agg_mat_dew[dewatered,1:nrow(agg_mat_dew)] = agg_mat_dew[1:ncol(agg_mat_dew),dewatered] = 0
+  }
+  #Now connect the partly dewatered and free trib to the rest of the network
+  if(length(party_dewatered) >= 1){
+    
+    # First connect dewatered to stretch to all the tribs to which
+    # the stretch downstream of partly dewatered is connected to. 
+    # do it row wise and then col wise
+    agg_mat_dew[party_dewatered,1:nrow(agg_mat_dew)] = 
+      as.numeric(agg_mat_dew[party_dewatered,1:nrow(agg_mat_dew)] | agg_mat_dew[dwnstream_party_dew,1:nrow(agg_mat_dew)])
+    agg_mat_dew[1:ncol(agg_mat_dew),party_dewatered] = t(agg_mat_dew[party_dewatered,1:nrow(agg_mat_dew)])
+    
+    # do the same with free trib and party dewatered and free trib
+    agg_mat_dew[free_trib,1:nrow(agg_mat_dew)] = 
+      as.numeric(agg_mat_dew[free_trib,1:nrow(agg_mat_dew)] | agg_mat_dew[party_dewatered,1:nrow(agg_mat_dew)])
+    agg_mat_dew[1:ncol(agg_mat_dew),free_trib] = t(agg_mat_dew[free_trib,1:nrow(agg_mat_dew)])
+    
+    # lastly, connect free trib with stretch downstream of partly dewatered
+    agg_mat_dew[dwnstream_party_dew,free_trib] = agg_mat_dew[free_trib,dwnstream_party_dew] = 1 
+    
+  }
+  
+  
+  
+  #agg_mat_dew[dewatered[1],dewatered[2]] = agg_mat_dew[dewatered[2],dewatered[1]] = 0
+  #agg_mat_dew[dewatered[1],dewatered[3]] = agg_mat_dew[dewatered[3],dewatered[1]] = 0
+  #agg_mat_dew[dewatered[1],dewatered[3]] = agg_mat_dew[dewatered[3],dewatered[1]] = 0
+  #agg_mat_dew[3,4] = agg_mat_dew[4,3]= 1
   
   
   index_num = t(v_weights) %*% agg_mat_dew 
@@ -499,3 +526,10 @@ which(edge_attr(river_graph)$Company == "Sri_ph")
 
 get.data.frame(river_graph, what = "edges")
 get.data.frame(river_graph, what = "vertices")
+
+
+
+
+install.packages("installr")
+library(installr)
+updateR()
