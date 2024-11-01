@@ -410,7 +410,7 @@ DCI_Dewater1 = sum(river_net_simplified$length[c(1,4,5,7,8)])^2 / (sum(river_net
 DCI_Dewater2 = as.numeric(DCI_withoutDewater) - as.numeric(sum(river_net_simplified$DCI[c(dewatered)]))
 
 
-index[[1]] <- index_calculation(graph = river_graph,
+index[[1]] <- index_calculation_dewater(graph = river_graph,
                                 weight = "length",
                                 c_ij_flag = TRUE,
                                 B_ij_flag = FALSE,
@@ -440,8 +440,8 @@ sum(river_net_simplified$DCI[c(2,6)])
   
 
   
-  # A function that returns the dewatered nodes for each SHP company
-  DewateredNodes_TributaryFinder = function(vars){
+# A function that returns the dewatered nodes for each SHP company
+DewateredNodes_TributaryFinder = function(vars){
     
     #vars = edges_split[[2]]
     # each SHP company should have a weir and Ph location, i.e it has to have two rows. If not, there 
