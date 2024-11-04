@@ -332,9 +332,6 @@ NetworkGenerate <- function(dams_snapped_joined,shape_river_simple,type){
     slice(which.max(UPLAND_SKM)) %>% 
     ungroup()
   
-  ?st_join
-  
-  
   ggplot() +
     coord_fixed() +
     ggspatial::layer_spatial(river_net_simplified, color = "gray70")+
@@ -372,9 +369,6 @@ NetworkGenerate <- function(dams_snapped_joined,shape_river_simple,type){
     theme_minimal() +
     theme(legend.position = "bottom")
   
-  ?get_elev_raster
-  
-  
   # get DEM and transform to data frame with coordinates
   elevation <- get_elev_raster(shape_basin, z = 8)
   ?get_elev_raster
@@ -407,9 +401,6 @@ NetworkGenerate <- function(dams_snapped_joined,shape_river_simple,type){
     theme(legend.position = "bottom")+
     ggspatial::annotation_north_arrow(location = "br")+
     ggspatial::annotation_scale(location = "bl", style = "ticks")
-  
-  ?geom_spatial_label
-  ?layer_spatial
   
   #st_write(network_links, "Nethravathi/network_links.shp")
   #st_write(river_net_simplified, "Gurupura/river_net_simplified.shp",delete_layer = TRUE)
@@ -492,20 +483,33 @@ NetworkGenerate <- function(dams_snapped_joined,shape_river_simple,type){
       edges = get.data.frame(river_graph, what = "edges")
       vertices = get.data.frame(river_graph, what = "vertices")
       
-      #dewatered = as.numeric(edges$from[!is.na(edge_attr(river_graph)$Company)])
-      #dewatered = c(dewatered,as.numeric(edges$to[!is.na(edge_attr(river_graph)$Company)]))
-      #dewatered = dewatered[duplicated(dewatered)]
+      edges_split = split(edges %>% select(-Company),edges$Company,drop=FALSE)
+      result = lapply(edges_split,DewateredNodes_TributaryFinder)
       
-      edges_split = split(edges %>% select(-Company),edges$Company)
-      dewatered = lapply(edges_split,DewateredNodes)
-      #dewatered = as.numeric(sapply(dewatered, function(x){as.numeric(x[2])}))
-      dewatered = unlist(dewatered, use.names = F)
+      dewatered = unlist(lapply(result, `[[`, 1), use.names = F)
       dewatered = dewatered[!is.na(dewatered)]
       
-      river_net_simplified$length_sq = river_net_simplified$length * river_net_simplified$length
-      river_net_simplified$DCI = (river_net_simplified$length_sq)/(sum(river_net_simplified$length))^2
+      party_dewatered = unlist(lapply(result, `[[`, 2), use.names = F)
+      party_dewatered = party_dewatered[!is.na(party_dewatered)]
       
-      index[[1]][3] =   index[[1]][3] - as.numeric(sum(river_net_simplified$DCI[c(dewatered)]))
+      dwnstream_party_dew = unlist(lapply(result, `[[`, 3), use.names = F)
+      dwnstream_party_dew = dwnstream_party_dew[!is.na(dwnstream_party_dew)]
+      
+      free_trib = unlist(lapply(result, `[[`, 4), use.names = F)
+      free_trib = free_trib[!is.na(free_trib)]
+      
+      
+      #river_net_simplified$length_sq = river_net_simplified$length * river_net_simplified$length
+      #river_net_simplified$DCI = (river_net_simplified$length_sq)/(sum(river_net_simplified$length))^2
+      
+      #index[[1]][3] =   index[[1]][3] - as.numeric(sum(river_net_simplified$DCI[c(dewatered)]))
+      
+      index[[1]] <- index_calculation_dewater(graph = river_graph,
+                                              weight = "length",
+                                              c_ij_flag = TRUE,
+                                              B_ij_flag = FALSE,
+                                              index_type = "full",
+                                              index_mode = "from")
     }
 
   return(index[[1]])

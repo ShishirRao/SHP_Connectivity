@@ -440,7 +440,8 @@ sum(river_net_simplified$DCI[c(2,6)])
   
 
   
-# A function that returns the dewatered nodes for each SHP company
+# A function that returns the dewatered segment, tributary joining dewatered segment,
+# and the segment downstream of ph for each SHP company
 DewateredNodes_TributaryFinder = function(vars){
     
     #vars = edges_split[[2]]
@@ -477,3 +478,161 @@ DewateredNodes_TributaryFinder = function(vars){
 
 
 
+# This function is similar to the RiverConn's index_calculation function but the a[i,j] matrix has been 
+# edited to calculate the effect of dewatering. 
+
+index_calculation_dewater = function (graph, weight = "length", nodes_id = "name", index_type = "full", 
+                                      index_mode = "to", c_ij_flag = TRUE, B_ij_flag = TRUE, dir_fragmentation_type = "symmetric", 
+                                      pass_confluence = 1, pass_u = "pass_u", pass_d = "pass_d", 
+                                      field_B = "length", dir_distance_type = "symmetric", disp_type = "exponential", 
+                                      param_u, param_d, param, param_l) 
+{
+  if (!igraph::is_igraph(graph)) 
+    stop("'graph' must be an 'igraph' object")
+  if (!(index_type %in% c("full", "reach", "sum"))) 
+    stop("'index_type' must me either 'full', 'reach', or 'sum'")
+  if (index_type == "reach" & !(index_mode %in% c("from", "to"))) 
+    stop("'index_mode' must me either 'from' or 'to'")
+  if (index_type == "reach" & missing(index_mode)) 
+    stop("'index_mode' must me defined when index_type = 'reach'")
+  if (!(weight %in% igraph::vertex_attr_names(graph))) 
+    stop("'weight' argument must be a valid vertex attribute in 'graph'")
+  if (!(nodes_id %in% igraph::vertex_attr_names(graph))) 
+    stop("'nodes_id' argument must be a valid vertex attribute in 'graph'")
+  if (!(c_ij_flag | B_ij_flag)) 
+    stop("at least one among c_if and B_ij should be selected for calculations")
+  if (length(igraph::vertex_attr(graph, nodes_id)) < igraph::gorder(graph)) 
+    stop("'nodes_id' must be unique for each vertex")
+  if (!igraph::is_connected(graph)) 
+    stop("'graph' must be connected (check if some nodes are disconnected with igraph::components() )")
+  if ((dir_fragmentation_type == "asymmetric" | dir_distance_type == 
+       "asymmetric") & igraph::is_directed(graph) == FALSE) 
+    stop("'graph' must be directed when 'dir_fragmentation_type' or 'dir_distance_type' are set to 'asymmetric'")
+  if (weight %in% igraph::edge_attr_names(graph)) 
+    stop("'weight' argument must be a edge attribute in 'graph'")
+  if (field_B %in% igraph::edge_attr_names(graph)) 
+    stop("'field_B' argument must be a edge attribute in 'graph'")
+  if (!is.character(igraph::get.vertex.attribute(graph, nodes_id))) 
+    stop("'nodes_id' attribute of 'graph' must be of type 'charachter'")
+  if (c_ij_flag == TRUE) {
+    if (!(pass_u %in% igraph::edge_attr_names(graph))) 
+      stop("'pass_u' argument must be a edge attribute in 'graph'")
+    if (!(pass_d %in% igraph::edge_attr_names(graph))) 
+      stop("'pass_d' argument must be a edge attribute in 'graph'")
+  }
+  if (B_ij_flag == FALSE) {
+    param_u = param_d = param = param_l <- NA
+  }
+  if (dir_distance_type == "symmetric") {
+    param_u = param_d <- NA
+  }
+  if (dir_distance_type == "asymmetric") {
+    param <- NA
+  }
+  if (disp_type == "leptokurtic") {
+    param_u = param_d = param <- NA
+  }
+  igraph::V(graph)$name <- igraph::vertex_attr(graph, nodes_id)
+  if (c_ij_flag == TRUE) {
+    c_ij_mat <- c_ij_fun(graph, dir_fragmentation_type = dir_fragmentation_type, 
+                         pass_confluence = pass_confluence, pass_u = pass_u, 
+                         pass_d = pass_d)
+  }
+  if (B_ij_flag == TRUE) {
+    B_ij_mat <- B_ij_fun(graph, field_B = field_B, dir_distance_type = dir_distance_type, 
+                         disp_type = disp_type, param_u = param_u, param_d = param_d, 
+                         param = param, param_l = param_l)
+  }
+  if (c_ij_flag == TRUE & B_ij_flag == TRUE) {
+    agg_mat <- c_ij_mat * B_ij_mat
+  }
+  if (c_ij_flag == TRUE & B_ij_flag == FALSE) {
+    agg_mat <- c_ij_mat
+  }
+  if (c_ij_flag == FALSE & B_ij_flag == TRUE) {
+    agg_mat <- B_ij_mat
+  }
+  g_v_df <- dplyr::rename_with(igraph::as_data_frame(graph, 
+                                                     what = "vertices"), ~"weight_node", contains(weight))
+  v_weights <- g_v_df$weight_node
+  if (index_type == "full") {
+    
+    
+    #Make the dewatered stretch(es) Cij = 0
+    if(length(dewatered) >= 1){
+      #dewatered stretch can't be connected to any other stretch. 
+      #So make the Cij of everything connected to that stretch = 0
+      agg_mat[dewatered,1:nrow(agg_mat)] = agg_mat[1:ncol(agg_mat),dewatered] = 0
+    }
+    #Now connect the partly dewatered and free trib to the rest of the network
+    if(length(party_dewatered) >= 1){
+      
+      # First connect dewatered to stretch to all the tribs to which
+      # the stretch downstream of partly dewatered is connected to. 
+      # do it row wise and then col wise
+      agg_mat[party_dewatered,1:nrow(agg_mat)] = 
+        as.numeric(agg_mat[party_dewatered,1:nrow(agg_mat)] | agg_mat[dwnstream_party_dew,1:nrow(agg_mat)])
+      agg_mat[1:ncol(agg_mat),party_dewatered] = t(agg_mat[party_dewatered,1:nrow(agg_mat)])
+      
+      # do the same with free trib and party dewatered and free trib
+      agg_mat[free_trib,1:nrow(agg_mat)] = 
+        as.numeric(agg_mat[free_trib,1:nrow(agg_mat)] | agg_mat[party_dewatered,1:nrow(agg_mat)])
+      agg_mat[1:ncol(agg_mat),free_trib] = t(agg_mat[free_trib,1:nrow(agg_mat)])
+      
+      # lastly, connect free trib with stretch downstream of partly dewatered
+      agg_mat[dwnstream_party_dew,free_trib] = agg_mat[free_trib,dwnstream_party_dew] = 1 
+      
+    }
+    
+    index_num = t(v_weights) %*% agg_mat %*% v_weights
+    index_den = sum(v_weights)^2
+    index = index_num/index_den
+    index <- data.frame(num = index_num, den = index_den, 
+                        index = index)
+  }
+  if (index_type == "reach") {
+    if (index_mode == "to") {
+      index_num = agg_mat %*% v_weights
+    }
+    if (index_mode == "from") {
+      index_num = t(t(v_weights) %*% agg_mat)
+    }
+    index_den = sum(v_weights)
+    index = index_num/index_den
+    index = data.frame(name = igraph::V(graph)$name, num = index_num, 
+                       den = index_den, index = index) %>% dplyr::rename_with(~nodes_id, 
+                                                                              contains("name"))
+  }
+  if (index_type == "sum") {
+    if (!("type" %in% igraph::edge_attr_names(graph))) 
+      stop("the graph's edges must contain the 'type' attribute with labels 'dam' or\n      'link' depending on the role of the edge (barrier or confluence).\n      Essential to calculate CAFI properly.")
+    igraph::E(graph)$pass_u <- igraph::get.edge.attribute(graph, 
+                                                          pass_u)
+    igraph::E(graph)$pass_d <- igraph::get.edge.attribute(graph, 
+                                                          pass_d)
+    igraph::E(graph)$pass_u <- ifelse(is.na(igraph::E(graph)$pass_u), 
+                                      pass_confluence, igraph::E(graph)$pass_u)
+    igraph::E(graph)$pass_d <- ifelse(is.na(igraph::E(graph)$pass_d), 
+                                      pass_confluence, igraph::E(graph)$pass_d)
+    if (dir_fragmentation_type == "symmetric") {
+      igraph::E(graph)$pass <- igraph::E(graph)$pass_d * 
+        igraph::E(graph)$pass_u
+    }
+    if (dir_fragmentation_type == "asymmetric" & index_mode == 
+        "to") {
+      igraph::E(graph)$pass <- igraph::E(graph)$pass_d
+    }
+    if (dir_fragmentation_type == "asymmetric" & index_mode == 
+        "from") {
+      igraph::E(graph)$pass <- igraph::E(graph)$pass_u
+    }
+    g_v_df <- dplyr::rename_with(igraph::as_data_frame(graph, 
+                                                       what = "vertices"), ~"weight_node", contains(weight))
+    g_e_df <- igraph::as_data_frame(graph, what = "edges") %>% 
+      dplyr::filter(.data$type == "dam") %>% dplyr::mutate(pass = 1 - 
+                                                             .data$pass) %>% dplyr::select(.data$from, .data$pass) %>% 
+      dplyr::rename(name = .data$from) %>% dplyr::left_join(g_v_df)
+    index = sum(g_e_df$pass * g_e_df$weight_node/max(g_v_df$weight_node))
+  }
+  return(index)
+}
