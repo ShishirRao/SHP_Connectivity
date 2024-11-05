@@ -100,6 +100,7 @@ index_calc_wrapper <- function(name, shape_river, shape_dams, shape_basin,type){
   
   #shape_dams = shape_Large_dams
   #shape_dams = shape_SHPs
+  #shape_dams = shape_SHPs_PH
   #name = basin_name
   #pruned river network
   # Set a threshold of 10 square kilometers
@@ -352,13 +353,13 @@ g <- split(filenames, g)
 g
 
 
-g[17]
+g[29]
 
 
 listofres = NULL
 #call function to loop through each basin calculating DCI
 #listofres = lapply(g,collate)
-listofres = lapply(g[17],collate)
+listofres = lapply(g[29],collate)
 out.df <- (do.call("rbind", listofres))
 out.df <- out.df %>% `rownames<-`(seq_len(nrow(out.df)))
 names(out.df) <- c("Basin_name","DCIp","Type")
