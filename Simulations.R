@@ -579,8 +579,20 @@ index_calculation_dewater = function (graph, weight = "length", nodes_id = "name
         as.numeric(agg_mat[free_trib,1:nrow(agg_mat)] | agg_mat[party_dewatered,1:nrow(agg_mat)])
       agg_mat[1:ncol(agg_mat),free_trib] = t(agg_mat[free_trib,1:nrow(agg_mat)])
       
-      # lastly, connect free trib with stretch downstream of partly dewatered
+      # Now connect free trib with stretch downstream of partly dewatered
       agg_mat[dwnstream_party_dew,free_trib] = agg_mat[free_trib,dwnstream_party_dew] = 1 
+      
+      # Lastly, change the Cij value for the party_dewatered based on the discharge contributation from free trib
+      # we use area as a proxy for discharge
+      # Since RiverConn alters the upland drainage area while slicing, use st_join to find the upland area from the original hydrosheds file
+      free_trib_attr = st_join(river_net_simplified[river_net_simplified$NodeID == free_trib,], shape_river, join = st_equals_exact, par = 0.001 )
+      free_trib_wshed = free_trib_attr$UPLAND_SKM.y
+    
+      # Find the upland area of the partly dew_wshed. Riverconn slicing doesn't affect this paramter much
+      party_dew_wshed = river_net_simplified$UPLAND_SKM[river_net_simplified$NodeID == party_dewatered]
+      
+      # Calculate Cij for party dewatered as the ratio of free trib wshed to party dewatered wshed
+      agg_mat[party_dewatered,party_dewatered] = free_trib_wshed/party_dew_wshed
       
     }
     
@@ -636,3 +648,9 @@ index_calculation_dewater = function (graph, weight = "length", nodes_id = "name
   }
   return(index)
 }
+
+river_net_simplified[river_net_simplified$NodeID == free_trib,]
+
+st_join(river_net_simplified[river_net_simplified$NodeID == free_trib,], shape_river, join = st_is_within_distance, dist = 10 )
+
+

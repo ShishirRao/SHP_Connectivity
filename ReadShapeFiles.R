@@ -23,7 +23,7 @@ library(rlist)
 # for each basin, extract the basin name, and pass river, dam and wshed shape file to index calculation function
 collate <- function(basin_vars){
   
-  #basin_vars = g[3][[1]]
+  #basin_vars = g[9][[1]]
   basin_name <- sub("(.+?)(\\_.*)", "\\1", basin_vars[1])
   
   # parse through file names to detect river, wshed and dam files
@@ -201,13 +201,14 @@ index_calc_wrapper <- function(name, shape_river, shape_dams, shape_basin,type){
     
   # Create junction point shapefile
     
-  network_links <- rbind(
+    # Create junction point shapefile
+    network_links <- rbind(
       dams_snapped_joined %>% 
         mutate(type = "dam", id_barrier = id_dam) %>%
-        dplyr::select(type, id_barrier, pass_u, pass_d,Company),
+        dplyr::select(type, id_barrier, pass_u, pass_d,Company,Comments),
       river_joins %>% mutate(type = "joint") %>%
         dplyr::select(type) %>%
-        mutate(id_barrier = NA, pass_u = NA, pass_d = NA,Company = NA) %>%
+        mutate(id_barrier = NA, pass_u = NA, pass_d = NA,Company = NA,Comments = NA) %>%
         rename(geometry = x)) %>%
       mutate(id_links = 1:nrow(.))
   
@@ -308,19 +309,33 @@ index_calc_wrapper <- function(name, shape_river, shape_dams, shape_basin,type){
     edges = get.data.frame(river_graph, what = "edges")
     vertices = get.data.frame(river_graph, what = "vertices")
     
-    dewatered = as.numeric(edges$from[!is.na(edge_attr(river_graph)$Company)])
-    dewatered = c(dewatered,as.numeric(edges$to[!is.na(edge_attr(river_graph)$Company)]))
-    dewatered = dewatered[duplicated(dewatered)]
+    edges_split = split(edges %>% select(-Company),edges$Company,drop=FALSE)
+    result = lapply(edges_split,DewateredNodes_TributaryFinder)
     
-    edges_split = split(edges %>% select(-Company),edges$Company)
-    dewatered = lapply(edges_split,DewateredNodes)
-    dewatered = as.numeric(sapply(dewatered, function(x){as.numeric(x[1])}))
+    dewatered = unlist(lapply(result, `[[`, 1), use.names = F)
     dewatered = dewatered[!is.na(dewatered)]
     
-    river_net_simplified$length_sq = river_net_simplified$length * river_net_simplified$length
-    river_net_simplified$DCI = (river_net_simplified$length_sq)/(sum(river_net_simplified$length))^2
+    party_dewatered = unlist(lapply(result, `[[`, 2), use.names = F)
+    party_dewatered = party_dewatered[!is.na(party_dewatered)]
     
-    index[[1]][3] =   index[[1]][3] - as.numeric(sum(river_net_simplified$DCI[c(dewatered)]))
+    dwnstream_party_dew = unlist(lapply(result, `[[`, 3), use.names = F)
+    dwnstream_party_dew = dwnstream_party_dew[!is.na(dwnstream_party_dew)]
+    
+    free_trib = unlist(lapply(result, `[[`, 4), use.names = F)
+    free_trib = free_trib[!is.na(free_trib)]
+    
+    
+    #river_net_simplified$length_sq = river_net_simplified$length * river_net_simplified$length
+    #river_net_simplified$DCI = (river_net_simplified$length_sq)/(sum(river_net_simplified$length))^2
+    
+    #index[[1]][3] =   index[[1]][3] - as.numeric(sum(river_net_simplified$DCI[c(dewatered)]))
+    
+    index[[1]] <- index_calculation_dewater(graph = river_graph,
+                                            weight = "length",
+                                            c_ij_flag = TRUE,
+                                            B_ij_flag = FALSE,
+                                            index_type = "full",
+                                            index_mode = "from")
   }
     
   return(data.frame(name = name, DCIp = index[[1]][3]))
@@ -342,7 +357,7 @@ g[17]
 
 listofres = NULL
 #call function to loop through each basin calculating DCI
-listofres = lapply(g,collate)
+#listofres = lapply(g,collate)
 listofres = lapply(g[17],collate)
 out.df <- (do.call("rbind", listofres))
 out.df <- out.df %>% `rownames<-`(seq_len(nrow(out.df)))

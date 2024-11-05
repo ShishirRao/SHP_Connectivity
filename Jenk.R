@@ -537,3 +537,15 @@ updateR()
 
 
 
+
+
+
+edges_split = split(edges %>% select(-Company),edges$Company)
+dewatered = lapply(edges_split,DewateredNodes)
+dewatered = as.numeric(sapply(dewatered, function(x){as.numeric(x[1])}))
+dewatered = dewatered[!is.na(dewatered)]
+
+river_net_simplified$length_sq = river_net_simplified$length * river_net_simplified$length
+river_net_simplified$DCI = (river_net_simplified$length_sq)/(sum(river_net_simplified$length))^2
+
+index[[1]][3] =   index[[1]][3] - as.numeric(sum(river_net_simplified$DCI[c(dewatered)]))

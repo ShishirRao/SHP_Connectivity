@@ -22,10 +22,10 @@ setwd("E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity")
 
 
 #shape_river <- st_read("Nethravathi/Nethravathi_river.shp")
-#shape_river <- st_read("Nethravathi/Nethravathi_river_V2.shp")
-#shape_basin <- st_read("Nethravathi/Nethravathi_wshed.shp")
-#shape_SHPs <- st_read("Nethravathi/Nethravathi_SHPs.shp")
-#shape_SHPs_PH <- st_read("Nethravathi/Nethravathi_PH.shp")
+shape_river <- st_read("Nethravathi/Nethravathi_river_V2.shp")
+shape_basin <- st_read("Nethravathi/Nethravathi_wshed.shp")
+shape_SHPs <- st_read("Nethravathi/Nethravathi_SHPs.shp")
+shape_SHPs_PH <- st_read("Nethravathi/Nethravathi_PH.shp")
 
 
 #shape_river <- st_read("Kaveri/Kaveri_river.shp")
@@ -52,11 +52,11 @@ setwd("E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity")
 #shape_basin <- st_read("Suvarna/Suvarna_wshed.shp")
 #shape_dams <- st_read("Suvarna/Suvarna_SHPs.shp")
 
-shape_river <- st_read("Gurupura/Gurupura_river.shp")
-shape_river <- st_read("Gurupura/Gurupura_river_v2.shp")
-shape_basin <- st_read("Gurupura/Gurupura_wshed.shp")
-shape_SHPs <- st_read("Gurupura/Gurupura_SHPs.shp")
-shape_SHPs_PH <- st_read("Gurupura/Gurupura_PH.shp")
+#shape_river <- st_read("Gurupura/Gurupura_river.shp")
+#shape_river <- st_read("Gurupura/Gurupura_river_v2.shp")
+#shape_basin <- st_read("Gurupura/Gurupura_wshed.shp")
+#shape_SHPs <- st_read("Gurupura/Gurupura_SHPs.shp")
+#shape_SHPs_PH <- st_read("Gurupura/Gurupura_PH.shp")
 
 #shape_river <- st_read("Tunga/Tunga_river.shp")
 #shape_river <- st_read("Tunga/Tunga_river_v2.shp")
