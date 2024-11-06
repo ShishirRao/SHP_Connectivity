@@ -35,18 +35,19 @@ setwd("E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity")
 #shape_SHPs_PH <- st_read("Kaveri/Kaveri_PH.shp")
 #shape_Large_dams <- st_read("Kaveri/Kaveri_LargeDams.shp")
 
-#shape_river <- st_read("Sharavathi/Sharavathi_river.shp") #confluences removed
-#shape_river <- st_read("Sharavathi/Sharavathi_river_v2.shp") #confluences removed
-#shape_basin <- st_read("Sharavathi/Sharavathi_wshed.shp")
-#shape_SHPs <- st_read("Sharavathi/Sharavathi_SHPs.shp")
-#shape_Large_dams <- st_read("Sharavathi/Sharavathi_LargeDams.shp")
+shape_river <- st_read("Sharavathi/Sharavathi_river.shp") #confluences removed
+shape_river <- st_read("Sharavathi/Sharavathi_river_v2.shp") #confluences removed
+shape_basin <- st_read("Sharavathi/Sharavathi_wshed.shp")
+shape_SHPs <- st_read("Sharavathi/Sharavathi_SHPs.shp")
+shape_Large_dams <- st_read("Sharavathi/Sharavathi_LargeDams.shp")
+shape_SHPs_PH <- st_read("Sharavathi/Sharavathi_PH.shp")
 
 #shape_river <- st_read("Haladi/Haladi_river.shp")
-shape_river <- st_read("Haladi/Haladi_river_v2.shp")
-shape_basin <- st_read("Haladi/Haladi_wshed.shp") 
-shape_SHPs <- st_read("Haladi/Haladi_SHPs.shp")
-shape_Large_dams <- st_read("Haladi/Haladi_LargeDams.shp")
-shape_SHPs_PH <- st_read("Haladi/Haladi_PH.shp")
+#shape_river <- st_read("Haladi/Haladi_river_v2.shp")
+#shape_basin <- st_read("Haladi/Haladi_wshed.shp") 
+#shape_SHPs <- st_read("Haladi/Haladi_SHPs.shp")
+#shape_Large_dams <- st_read("Haladi/Haladi_LargeDams.shp")
+#shape_SHPs_PH <- st_read("Haladi/Haladi_PH.shp")
 
 
 #shape_river <- st_read("Suvarna/Suvarna_river.shp")
