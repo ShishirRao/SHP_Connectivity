@@ -42,16 +42,18 @@ setwd("E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity")
 #shape_Large_dams <- st_read("Sharavathi/Sharavathi_LargeDams.shp")
 
 #shape_river <- st_read("Haladi/Haladi_river.shp")
-#shape_river <- st_read("Haladi/Haladi_river_v2.shp")
-#shape_basin <- st_read("Haladi/Haladi_wshed.shp") 
-#shape_SHPs <- st_read("Haladi/Haladi_SHPs.shp")
-#shape_Large_dams <- st_read("Haladi/Haladi_LargeDams.shp")
+shape_river <- st_read("Haladi/Haladi_river_v2.shp")
+shape_basin <- st_read("Haladi/Haladi_wshed.shp") 
+shape_SHPs <- st_read("Haladi/Haladi_SHPs.shp")
+shape_Large_dams <- st_read("Haladi/Haladi_LargeDams.shp")
+shape_SHPs_PH <- st_read("Haladi/Haladi_PH.shp")
 
-shape_river <- st_read("Suvarna/Suvarna_river.shp")
-shape_river <- st_read("Suvarna/Suvarna_river_v2.shp")
-shape_basin <- st_read("Suvarna/Suvarna_wshed.shp")
-shape_SHPs <- st_read("Suvarna/Suvarna_SHPs.shp")
-shape_SHPs_PH <- st_read("Suvarna/Suvarna_PH.shp")
+
+#shape_river <- st_read("Suvarna/Suvarna_river.shp")
+#shape_river <- st_read("Suvarna/Suvarna_river_v2.shp")
+#shape_basin <- st_read("Suvarna/Suvarna_wshed.shp")
+#shape_SHPs <- st_read("Suvarna/Suvarna_SHPs.shp")
+#shape_SHPs_PH <- st_read("Suvarna/Suvarna_PH.shp")
 
 #shape_river <- st_read("Gurupura/Gurupura_river.shp")
 #shape_river <- st_read("Gurupura/Gurupura_river_v2.shp")
@@ -107,7 +109,7 @@ shape_Large_dams$Sitatued.o = "river_non_SHP"
 
 shape_dams = bind_rows(list(shape_SHPs, shape_Large_dams))
 shape_dams = bind_rows(list(shape_SHPs, shape_Large_dams,shape_SHPs_PH))
-shape_dams = bind_rows(list(shape_SHPs, shape_SHPs_PH))
+#shape_dams = bind_rows(list(shape_SHPs, shape_SHPs_PH))
 #shape_dams = shape_SHPs
 #shape_dams = shape_Large_dams
 
@@ -273,40 +275,17 @@ DCI_Large = NetworkGenerate(dams_snapped_joined[dams_snapped_joined$Sitatued.o =
 
 #just the SHP weir
 DCI_SHP = NetworkGenerate(dams_snapped_joined[dams_snapped_joined$Sitatued.o != "river_non_SHP" &
-                                                dams_snapped_joined$Comments != "Powerhouse" | 
-                                                is.na(dams_snapped_joined$Comments),],shape_river_simple,"SHP")
+                                                (dams_snapped_joined$Comments != "Powerhouse" | 
+                                                   is.na(dams_snapped_joined$Comments)),],shape_river_simple,"SHP")
 
 #SHP weir and ph = dewatering
-DCI_SHP_Dewater = NetworkGenerate(dams_snapped_joined[dams_snapped_joined$Sitatued.o != "river_non_SHP" |
-                                                        dams_snapped_joined$Comments == "Powerhouse",],shape_river_simple,"Dewater")
+DCI_SHP_Dewater = NetworkGenerate(dams_snapped_joined[dams_snapped_joined$Sitatued.o != "river_non_SHP",],shape_river_simple,"Dewater")
 
-
-# A function that returns the dewatered nodes for each SHP company
-DewateredNodes = function(vars){
-  
-  vars = edges_split[[2]]
-  # each SHP company should have a weir and Ph location, i.e it has to have two rows. If not, there 
-  # isn't a dewatered stretch
-  dewatered = as.numeric(NA) # initialization
-  
-  if(nrow(vars) == 2){
-    dewatered = as.numeric(c(vars$from,vars$to))
-    dewatered = dewatered[duplicated(dewatered)]
-    
-    # if there isn't a common node between dam and the ph, it means there is a tributary joining.
-    # in case send both the from and to nodes back to the calling function
-    if(length(dewatered) == 0){
-      dewatered = as.numeric(c(vars$from[which(vars$Comments == "Powerhouse")],
-                             vars$to[which(vars$Comments != "Powerhouse" | is.na(vars$Comments))]))
-      
-      tributary = vars$to[which(vars$Comments == "Powerhouse")]
-    }
-  }
-  return(dewatered)
-}
 
 # This function generates a network link for the set of dams. The dam set could be of different scenarios 1) SHP 2)large 3) dewatered )
 NetworkGenerate <- function(dams_snapped_joined,shape_river_simple,type){
+  
+  dams_snapped_joined = dams_snapped_joined[dams_snapped_joined$Sitatued.o != "river_non_SHP",]
   
   # Create junction point shapefile
   network_links <- rbind(

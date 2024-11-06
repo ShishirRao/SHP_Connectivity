@@ -23,7 +23,7 @@ library(rlist)
 # for each basin, extract the basin name, and pass river, dam and wshed shape file to index calculation function
 collate <- function(basin_vars){
   
-  #basin_vars = g[9][[1]]
+  #basin_vars = g[10][[1]]
   basin_name <- sub("(.+?)(\\_.*)", "\\1", basin_vars[1])
   
   # parse through file names to detect river, wshed and dam files
@@ -74,9 +74,9 @@ collate <- function(basin_vars){
     shape_Large_dams <- st_read(LargeDams_file)
     #send river, wshed and dame file names to be read and for calculating index
     shape_Large_dams$Sitatued.o = "river_non_SHP"
-    shape_Large_dams$Company = "Large Hydro"
+    shape_Large_dams$Company = shape_Large_dams$Comments = "Large Hydro"
     res3 = index_calc_wrapper(basin_name,shape_river,shape_Large_dams,shape_basin,"Large")
-    res3 = cbind(res2,type = "LargeDams")
+    res3 = cbind(res3,type = "LargeDams")
     print(res2)
   }
   
@@ -84,14 +84,6 @@ collate <- function(basin_vars){
   return(rbind(res1,res2,res3))
 }
 
-
-# A function that returns the dewatered nodes for each SHP company. This is only for 
-# calculating the effects of dewatering on connectivity
-DewateredNodes = function(vars){
-  dewatered = as.numeric(c(vars$from,vars$to))
-  dewatered = dewatered[duplicated(dewatered)]
-  return(dewatered)
-}
 
 
 # this function takes basin name, river_file, dam_file, wshed_file and type == SHP or large or dewatering
@@ -102,6 +94,7 @@ index_calc_wrapper <- function(name, shape_river, shape_dams, shape_basin,type){
   #shape_dams = shape_SHPs
   #shape_dams = shape_SHPs_PH
   #name = basin_name
+  #type = "Large"
   #pruned river network
   # Set a threshold of 10 square kilometers
   threshold = 10
@@ -353,13 +346,13 @@ g <- split(filenames, g)
 g
 
 
-g[29]
+g[10]
 
 
 listofres = NULL
 #call function to loop through each basin calculating DCI
 #listofres = lapply(g,collate)
-listofres = lapply(g[29],collate)
+listofres = lapply(g[10],collate)
 out.df <- (do.call("rbind", listofres))
 out.df <- out.df %>% `rownames<-`(seq_len(nrow(out.df)))
 names(out.df) <- c("Basin_name","DCIp","Type")
