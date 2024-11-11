@@ -383,7 +383,7 @@ vertices = get.data.frame(river_graph, what = "vertices")
 
 
 #create a blank category
-edges_split = split(edges %>% select(-Company),edges$Company,drop=FALSE)
+edges_split = split(edges,edges$Company,drop=FALSE)
 result = lapply(edges_split,DewateredNodes_TributaryFinder)
 
 dewatered = unlist(lapply(result, `[[`, 1), use.names = F)
@@ -444,7 +444,7 @@ sum(river_net_simplified$DCI[c(2,6)])
 # and the segment downstream of ph for each SHP company
 DewateredNodes_TributaryFinder = function(vars){
     
-    vars = edges_split[[6]]
+    #vars = edges_split[[7]]
     # each SHP company should have a weir and Ph location, i.e it has to have two rows. If not, there 
     # isn't a dewatered stretch
     dewatered = as.numeric(NA) # initialization
@@ -468,7 +468,8 @@ DewateredNodes_TributaryFinder = function(vars){
         dwnstream_party_dew = as.numeric(vars$to[which(vars$Comments == "Powerhouse")])
         
         # the tributary joining the dewatered stretch
-        tributary = as.numeric(edges$from[which(edges$to == (edges$from[which(edges$Comments == "Powerhouse")]))])
+        # make sure to check the company name because powerhouse is not an unique identifier. 
+        tributary = as.numeric(edges$from[which(edges$to == (edges$from[which(edges$Comments == "Powerhouse" & edges$Company == vars$Company)]))])
         tributary = tributary[!(tributary %in% dewatered)]
         }
     }
@@ -557,42 +558,44 @@ index_calculation_dewater = function (graph, weight = "length", nodes_id = "name
   v_weights <- g_v_df$weight_node
   if (index_type == "full") {
     
-    
     #Make the dewatered stretch(es) Cij = 0
     if(length(dewatered) >= 1){
-      #dewatered stretch can't be connected to any other stretch. 
-      #So make the Cij of everything connected to that stretch = 0
-      agg_mat[dewatered,1:nrow(agg_mat)] = agg_mat[1:ncol(agg_mat),dewatered] = 0
+      for(i in 1:length(dewatered)){
+        #dewatered stretch can't be connected to any other stretch. 
+        #So make the Cij of everything connected to that stretch = 0
+        agg_mat[dewatered[i],1:nrow(agg_mat)] = agg_mat[1:ncol(agg_mat),dewatered[i]] = 0  
+      }
     }
     #Now connect the partly dewatered and free trib to the rest of the network
     if(length(party_dewatered) >= 1){
+      for(i in 1:length(party_dewatered)){
+        # First connect dewatered to stretch to all the tribs to which
+        # the stretch downstream of partly dewatered is connected to. 
+        # do it row wise and then col wise
+        agg_mat[party_dewatered[i],1:nrow(agg_mat)] = 
+          as.numeric(agg_mat[party_dewatered[i],1:nrow(agg_mat)] | agg_mat[dwnstream_party_dew[i],1:nrow(agg_mat)])
+        agg_mat[1:ncol(agg_mat),party_dewatered[i]] = t(agg_mat[party_dewatered[i],1:nrow(agg_mat)])
+        
+        # do the same with free trib and party dewatered and free trib
+        agg_mat[free_trib[i],1:nrow(agg_mat)] = 
+          as.numeric(agg_mat[free_trib[i],1:nrow(agg_mat)] | agg_mat[party_dewatered[i],1:nrow(agg_mat)])
+        agg_mat[1:ncol(agg_mat),free_trib[i]] = t(agg_mat[free_trib[i],1:nrow(agg_mat)])
+        
+        # Now connect free trib with stretch downstream of partly dewatered
+        agg_mat[dwnstream_party_dew[i],free_trib[i]] = agg_mat[free_trib[i],dwnstream_party_dew[i]] = 1 
+        
+        # Lastly, change the Cij value for the party_dewatered based on the discharge contributation from free trib
+        # we use area as a proxy for discharge
+        # Since RiverConn alters the upland drainage area while slicing, use st_join to find the upland area from the original hydrosheds file
+        free_trib_attr = st_join(river_net_simplified[river_net_simplified$NodeID == free_trib[i],], shape_river, join = st_equals_exact, par = 0.001 )
+        free_trib_wshed = free_trib_attr$UPLAND_SKM.y
       
-      # First connect dewatered to stretch to all the tribs to which
-      # the stretch downstream of partly dewatered is connected to. 
-      # do it row wise and then col wise
-      agg_mat[party_dewatered,1:nrow(agg_mat)] = 
-        as.numeric(agg_mat[party_dewatered,1:nrow(agg_mat)] | agg_mat[dwnstream_party_dew,1:nrow(agg_mat)])
-      agg_mat[1:ncol(agg_mat),party_dewatered] = t(agg_mat[party_dewatered,1:nrow(agg_mat)])
-      
-      # do the same with free trib and party dewatered and free trib
-      agg_mat[free_trib,1:nrow(agg_mat)] = 
-        as.numeric(agg_mat[free_trib,1:nrow(agg_mat)] | agg_mat[party_dewatered,1:nrow(agg_mat)])
-      agg_mat[1:ncol(agg_mat),free_trib] = t(agg_mat[free_trib,1:nrow(agg_mat)])
-      
-      # Now connect free trib with stretch downstream of partly dewatered
-      agg_mat[dwnstream_party_dew,free_trib] = agg_mat[free_trib,dwnstream_party_dew] = 1 
-      
-      # Lastly, change the Cij value for the party_dewatered based on the discharge contributation from free trib
-      # we use area as a proxy for discharge
-      # Since RiverConn alters the upland drainage area while slicing, use st_join to find the upland area from the original hydrosheds file
-      free_trib_attr = st_join(river_net_simplified[river_net_simplified$NodeID == free_trib,], shape_river, join = st_equals_exact, par = 0.001 )
-      free_trib_wshed = free_trib_attr$UPLAND_SKM.y
-    
-      # Find the upland area of the partly dew_wshed. Riverconn slicing doesn't affect this paramter much
-      party_dew_wshed = river_net_simplified$UPLAND_SKM[river_net_simplified$NodeID == party_dewatered]
-      
-      # Calculate Cij for party dewatered as the ratio of free trib wshed to party dewatered wshed
-      agg_mat[party_dewatered,party_dewatered] = free_trib_wshed/party_dew_wshed
+        # Find the upland area of the partly dew_wshed. Riverconn slicing doesn't affect this paramter much
+        party_dew_wshed = river_net_simplified$UPLAND_SKM[river_net_simplified$NodeID == party_dewatered[i]]
+        
+        # Calculate Cij for party dewatered as the ratio of free trib wshed to party dewatered wshed
+        agg_mat[party_dewatered[i],party_dewatered[i]] = free_trib_wshed[i]/party_dew_wshed[i]
+      }
       
     }
     
