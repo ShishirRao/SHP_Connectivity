@@ -470,7 +470,8 @@ NetworkGenerate <- function(dams_snapped_joined,shape_river_simple,type){
       edges = get.data.frame(river_graph, what = "edges")
       vertices = get.data.frame(river_graph, what = "vertices")
       
-      edges_split = split(edges %>% select(-Company),edges$Company,drop=FALSE)
+      #edges_split = split(edges %>% select(-Company),edges$Company,drop=FALSE)
+      edges_split = split(edges,edges$Company,drop=FALSE)
       result = lapply(edges_split,DewateredNodes_TributaryFinder)
       
       dewatered = unlist(lapply(result, `[[`, 1), use.names = F)
