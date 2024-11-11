@@ -35,12 +35,12 @@ setwd("E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity")
 #shape_SHPs_PH <- st_read("Kaveri/Kaveri_PH.shp")
 #shape_Large_dams <- st_read("Kaveri/Kaveri_LargeDams.shp")
 
-shape_river <- st_read("Sharavathi/Sharavathi_river.shp") #confluences removed
-shape_river <- st_read("Sharavathi/Sharavathi_river_v2.shp") #confluences removed
-shape_basin <- st_read("Sharavathi/Sharavathi_wshed.shp")
-shape_SHPs <- st_read("Sharavathi/Sharavathi_SHPs.shp")
-shape_Large_dams <- st_read("Sharavathi/Sharavathi_LargeDams.shp")
-shape_SHPs_PH <- st_read("Sharavathi/Sharavathi_PH.shp")
+#shape_river <- st_read("Sharavathi/Sharavathi_river.shp") #confluences removed
+#shape_river <- st_read("Sharavathi/Sharavathi_river_v2.shp") #confluences removed
+#shape_basin <- st_read("Sharavathi/Sharavathi_wshed.shp")
+#shape_SHPs <- st_read("Sharavathi/Sharavathi_SHPs.shp")
+#shape_Large_dams <- st_read("Sharavathi/Sharavathi_LargeDams.shp")
+#shape_SHPs_PH <- st_read("Sharavathi/Sharavathi_PH.shp")
 
 #shape_river <- st_read("Haladi/Haladi_river.shp")
 #shape_river <- st_read("Haladi/Haladi_river_v2.shp")
@@ -70,11 +70,12 @@ shape_SHPs_PH <- st_read("Sharavathi/Sharavathi_PH.shp")
 
 #shape_river <- st_read("Krishna/Krishna_river.shp")
 #shape_river <- st_read("Krishna/Krishna_river_v2.shp")
-#shape_river <- st_read("Krishna/Krishna_river_v3.shp")
+shape_river <- st_read("Krishna/Krishna_river_v3.shp")
 #shape_basin <- st_read("Krishna/Krishna_wshed.shp")
-#shape_basin <- st_read("Krishna/Krishna_wshed_v2.shp")
-#shape_SHPs <- st_read("Krishna/Krishna_SHPs.shp")
-#shape_Large_dams <- st_read("Krishna/Krishna_LargeDams.shp")
+shape_basin <- st_read("Krishna/Krishna_wshed_v2.shp")
+shape_SHPs <- st_read("Krishna/Krishna_SHPs.shp")
+shape_Large_dams <- st_read("Krishna/Krishna_LargeDams.shp")
+shape_SHPs_PH <- st_read("Krishna/Krishna_PH.shp")
 
 #shape_river <- st_read("Bhima/Bhima_river.shp")
 #shape_river <- st_read("Bhima/Bhima_river_v2.shp")
@@ -113,6 +114,10 @@ shape_dams = bind_rows(list(shape_SHPs, shape_Large_dams,shape_SHPs_PH))
 #shape_dams = bind_rows(list(shape_SHPs, shape_SHPs_PH))
 #shape_dams = shape_SHPs
 #shape_dams = shape_Large_dams
+
+nrow(shape_SHPs)
+nrow(shape_Large_dams)
+nrow(shape_SHPs_PH)
 
 #### shape files processing ####
 
@@ -252,7 +257,7 @@ nrow(dams_snapped_joined)
 
 #st_write(dams_snapped, "Kaveri/dams_snapped.shp",delete_layer = TRUE)
 #st_write(shape_river_small, "Haladi/shape_river_small.shp",delete_layer = TRUE)
-#st_write(dams_snapped_joined, "Kaveri/dams_snapped_joined.shp",delete_layer = TRUE)
+#st_write(dams_snapped_joined, "Krishna/dams_snapped_joined.shp",delete_layer = TRUE)
 
 headwaters_checking <- headwaters_dam(dams_snapped_joined, shape_river_simple)
 head(headwaters_checking$flag_headwater)
@@ -282,11 +287,12 @@ DCI_SHP = NetworkGenerate(dams_snapped_joined[dams_snapped_joined$Sitatued.o != 
 #SHP weir and ph = dewatering
 DCI_SHP_Dewater = NetworkGenerate(dams_snapped_joined[dams_snapped_joined$Sitatued.o != "river_non_SHP",],shape_river_simple,"Dewater")
 
+temp = dams_snapped_joined[dams_snapped_joined$Sitatued.o != "river_non_SHP",]
+
+dams_snapped_joined = dams_snapped_joined[dams_snapped_joined$Sitatued.o != "river_non_SHP",]
 
 # This function generates a network link for the set of dams. The dam set could be of different scenarios 1) SHP 2)large 3) dewatered )
 NetworkGenerate <- function(dams_snapped_joined,shape_river_simple,type){
-  
-  dams_snapped_joined = dams_snapped_joined[dams_snapped_joined$Sitatued.o != "river_non_SHP",]
   
   # Create junction point shapefile
   network_links <- rbind(
@@ -384,7 +390,7 @@ NetworkGenerate <- function(dams_snapped_joined,shape_river_simple,type){
     ggspatial::annotation_scale(location = "bl", style = "ticks")
   
   #st_write(network_links, "Nethravathi/network_links.shp")
-  #st_write(river_net_simplified, "Gurupura/river_net_simplified.shp",delete_layer = TRUE)
+  #st_write(river_net_simplified, "Krishna/river_net_simplified.shp",delete_layer = TRUE)
 
   # this won't work because not all rivers drain to the sea. Some are sub-basins
   #outlet <- river_net_simplified$NodeID[river_net_simplified$DIST_DN_KM == 0 ] 

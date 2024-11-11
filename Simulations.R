@@ -444,7 +444,7 @@ sum(river_net_simplified$DCI[c(2,6)])
 # and the segment downstream of ph for each SHP company
 DewateredNodes_TributaryFinder = function(vars){
     
-    #vars = edges_split[[2]]
+    vars = edges_split[[6]]
     # each SHP company should have a weir and Ph location, i.e it has to have two rows. If not, there 
     # isn't a dewatered stretch
     dewatered = as.numeric(NA) # initialization
