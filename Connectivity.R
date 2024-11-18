@@ -62,26 +62,28 @@ setwd("E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity")
 #shape_SHPs <- st_read("Gurupura/Gurupura_SHPs.shp")
 #shape_SHPs_PH <- st_read("Gurupura/Gurupura_PH.shp")
 
-#shape_river <- st_read("Tunga/Tunga_river.shp")
-#shape_river <- st_read("Tunga/Tunga_river_v2.shp")
-#shape_basin <- st_read("Tunga/Tunga_wshed.shp")
-#shape_SHPs <- st_read("Tunga/Tunga_SHPs.shp")
-#shape_Large_dams <- st_read("Tunga/Tunga_LargeDams.shp")
+shape_river <- st_read("Tunga/Tunga_river.shp")
+shape_river <- st_read("Tunga/Tunga_river_v2.shp")
+shape_basin <- st_read("Tunga/Tunga_wshed.shp")
+shape_SHPs <- st_read("Tunga/Tunga_SHPs.shp")
+shape_Large_dams <- st_read("Tunga/Tunga_LargeDams.shp")
+shape_SHPs_PH <- st_read("Tunga/Tunga_PH.shp")
 
 #shape_river <- st_read("Krishna/Krishna_river.shp")
 #shape_river <- st_read("Krishna/Krishna_river_v2.shp")
-shape_river <- st_read("Krishna/Krishna_river_v3.shp")
+#shape_river <- st_read("Krishna/Krishna_river_v3.shp")
 #shape_basin <- st_read("Krishna/Krishna_wshed.shp")
-shape_basin <- st_read("Krishna/Krishna_wshed_v2.shp")
-shape_SHPs <- st_read("Krishna/Krishna_SHPs.shp")
-shape_Large_dams <- st_read("Krishna/Krishna_LargeDams.shp")
-shape_SHPs_PH <- st_read("Krishna/Krishna_PH.shp")
+#shape_basin <- st_read("Krishna/Krishna_wshed_v2.shp")
+#shape_SHPs <- st_read("Krishna/Krishna_SHPs.shp")
+#shape_Large_dams <- st_read("Krishna/Krishna_LargeDams.shp")
+#shape_SHPs_PH <- st_read("Krishna/Krishna_PH.shp")
 
 #shape_river <- st_read("Bhima/Bhima_river.shp")
 #shape_river <- st_read("Bhima/Bhima_river_v2.shp")
 #shape_basin <- st_read("Bhima/Bhima_wshed.shp")
 #shape_SHPs <- st_read("Bhima/Bhima_SHPs.shp")
 #shape_Large_dams <- st_read("Bhima/Bhima_LargeDams.shp")
+#shape_SHPs_PH <- st_read("Bhima/Bhima_PH.shp")
 
 #shape_river <- st_read("Kali/Kali_river.shp")
 #shape_river <- st_read("Kali/Kali_river_v2.shp")
@@ -392,7 +394,7 @@ NetworkGenerate <- function(dams_snapped_joined,shape_river_simple,type){
     ggspatial::annotation_scale(location = "bl", style = "ticks")
   
   #st_write(network_links, "Nethravathi/network_links.shp")
-  #st_write(river_net_simplified, "Krishna/river_net_simplified.shp",delete_layer = TRUE)
+  #st_write(river_net_simplified, "Bhima/river_net_simplified.shp",delete_layer = TRUE)
 
   # this won't work because not all rivers drain to the sea. Some are sub-basins
   #outlet <- river_net_simplified$NodeID[river_net_simplified$DIST_DN_KM == 0 ] 

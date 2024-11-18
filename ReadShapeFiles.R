@@ -23,7 +23,7 @@ library(rlist)
 # for each basin, extract the basin name, and pass river, dam and wshed shape file to index calculation function
 collate <- function(basin_vars){
   
-  #basin_vars = g[10][[1]]
+  #basin_vars = g[15][[1]]
   basin_name <- sub("(.+?)(\\_.*)", "\\1", basin_vars[1])
   
   # parse through file names to detect river, wshed and dam files
@@ -94,7 +94,7 @@ index_calc_wrapper <- function(name, shape_river, shape_dams, shape_basin,type){
   #shape_dams = shape_SHPs
   #shape_dams = shape_SHPs_PH
   #name = basin_name
-  #type = "Large"
+  #type = "Dewater"
   #pruned river network
   # Set a threshold of 10 square kilometers
   threshold = 10
@@ -303,7 +303,9 @@ index_calc_wrapper <- function(name, shape_river, shape_dams, shape_basin,type){
     edges = get.data.frame(river_graph, what = "edges")
     vertices = get.data.frame(river_graph, what = "vertices")
     
-    edges_split = split(edges %>% select(-Company),edges$Company,drop=FALSE)
+    result = NULL
+    #edges_split = split(edges %>% select(-Company),edges$Company,drop=FALSE)
+    edges_split = split(edges,edges$Company,drop=FALSE)
     result = lapply(edges_split,DewateredNodes_TributaryFinder)
     
     dewatered = unlist(lapply(result, `[[`, 1), use.names = F)
@@ -346,13 +348,13 @@ g <- split(filenames, g)
 g
 
 
-g[10]
+g[30]
 
 
 listofres = NULL
 #call function to loop through each basin calculating DCI
 #listofres = lapply(g,collate)
-listofres = lapply(g[10],collate)
+listofres = lapply(g[30],collate)
 out.df <- (do.call("rbind", listofres))
 out.df <- out.df %>% `rownames<-`(seq_len(nrow(out.df)))
 names(out.df) <- c("Basin_name","DCIp","Type")
