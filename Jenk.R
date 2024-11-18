@@ -549,3 +549,15 @@ river_net_simplified$length_sq = river_net_simplified$length * river_net_simplif
 river_net_simplified$DCI = (river_net_simplified$length_sq)/(sum(river_net_simplified$length))^2
 
 index[[1]][3] =   index[[1]][3] - as.numeric(sum(river_net_simplified$DCI[c(dewatered)]))
+
+
+free_trib_attr = st_join(river_net_simplified[river_net_simplified$NodeID == free_trib[2],], shape_river, join = st_equals_exact, par = 0.001 )
+free_trib_wshed = free_trib_attr$UPLAND_SKM.y
+
+# Find the upland area of the partly dew_wshed. Riverconn slicing doesn't affect this paramter much
+party_dew_wshed = river_net_simplified$UPLAND_SKM[river_net_simplified$NodeID == party_dewatered[2]]
+
+free_trib_wshed/party_dew_wshed
+
+0.06543602
+0.0004515705

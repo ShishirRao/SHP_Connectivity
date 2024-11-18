@@ -457,7 +457,6 @@ DewateredNodes_TributaryFinder = function(vars){
       dewatered = dewatered[duplicated(dewatered)]
       
       # if there isn't a common node between dam and the ph, it means there is a tributary joining.
-      # in case send both the from and to nodes back to the calling function
       if(length(dewatered) == 0){
         # this is the stretch immediately downstream of the dam
         dewatered = as.numeric(vars$to[which(vars$Comments != "Powerhouse" | is.na(vars$Comments))])
@@ -556,6 +555,7 @@ index_calculation_dewater = function (graph, weight = "length", nodes_id = "name
   g_v_df <- dplyr::rename_with(igraph::as_data_frame(graph, 
                                                      what = "vertices"), ~"weight_node", contains(weight))
   v_weights <- g_v_df$weight_node
+  #agg_mat_saved = agg_mat
   if (index_type == "full") {
     
     #Make the dewatered stretch(es) Cij = 0
@@ -569,7 +569,8 @@ index_calculation_dewater = function (graph, weight = "length", nodes_id = "name
     #Now connect the partly dewatered and free trib to the rest of the network
     if(length(party_dewatered) >= 1){
       for(i in 1:length(party_dewatered)){
-        # First connect dewatered to stretch to all the tribs to which
+        
+        # First connect partly dewatered to stretch to all the tribs to which
         # the stretch downstream of partly dewatered is connected to. 
         # do it row wise and then col wise
         agg_mat[party_dewatered[i],1:nrow(agg_mat)] = 
@@ -581,7 +582,7 @@ index_calculation_dewater = function (graph, weight = "length", nodes_id = "name
           as.numeric(agg_mat[free_trib[i],1:nrow(agg_mat)] | agg_mat[party_dewatered[i],1:nrow(agg_mat)])
         agg_mat[1:ncol(agg_mat),free_trib[i]] = t(agg_mat[free_trib[i],1:nrow(agg_mat)])
         
-        # Now connect free trib with stretch downstream of partly dewatered
+        # Now connect free trib with the stretch downstream of partly dewatered
         agg_mat[dwnstream_party_dew[i],free_trib[i]] = agg_mat[free_trib[i],dwnstream_party_dew[i]] = 1 
         
         # Lastly, change the Cij value for the party_dewatered based on the discharge contributation from free trib
@@ -594,10 +595,11 @@ index_calculation_dewater = function (graph, weight = "length", nodes_id = "name
         party_dew_wshed = river_net_simplified$UPLAND_SKM[river_net_simplified$NodeID == party_dewatered[i]]
         
         # Calculate Cij for party dewatered as the ratio of free trib wshed to party dewatered wshed
-        agg_mat[party_dewatered[i],party_dewatered[i]] = free_trib_wshed[i]/party_dew_wshed[i]
+        agg_mat[party_dewatered[i],party_dewatered[i]] = free_trib_wshed/party_dew_wshed
       }
-      
     }
+
+    
     
     index_num = t(v_weights) %*% agg_mat %*% v_weights
     index_den = sum(v_weights)^2

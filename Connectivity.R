@@ -287,9 +287,9 @@ DCI_SHP = NetworkGenerate(dams_snapped_joined[dams_snapped_joined$Sitatued.o != 
 #SHP weir and ph = dewatering
 DCI_SHP_Dewater = NetworkGenerate(dams_snapped_joined[dams_snapped_joined$Sitatued.o != "river_non_SHP",],shape_river_simple,"Dewater")
 
-temp = dams_snapped_joined[dams_snapped_joined$Sitatued.o != "river_non_SHP",]
+#temp = dams_snapped_joined[dams_snapped_joined$Sitatued.o != "river_non_SHP",]
 
-dams_snapped_joined = dams_snapped_joined[dams_snapped_joined$Sitatued.o != "river_non_SHP",]
+#dams_snapped_joined = dams_snapped_joined[dams_snapped_joined$Sitatued.o != "river_non_SHP",]
 
 # This function generates a network link for the set of dams. The dam set could be of different scenarios 1) SHP 2)large 3) dewatered )
 NetworkGenerate <- function(dams_snapped_joined,shape_river_simple,type){
@@ -304,6 +304,8 @@ NetworkGenerate <- function(dams_snapped_joined,shape_river_simple,type){
       mutate(id_barrier = NA, pass_u = NA, pass_d = NA,Company = NA,Comments = NA) %>%
       rename(geometry = x)) %>%
     mutate(id_links = 1:nrow(.))
+  
+  print(network_links)
   
   
   # Split river network
@@ -470,6 +472,7 @@ NetworkGenerate <- function(dams_snapped_joined,shape_river_simple,type){
       edges = get.data.frame(river_graph, what = "edges")
       vertices = get.data.frame(river_graph, what = "vertices")
       
+      result = NULL
       #edges_split = split(edges %>% select(-Company),edges$Company,drop=FALSE)
       edges_split = split(edges,edges$Company,drop=FALSE)
       result = lapply(edges_split,DewateredNodes_TributaryFinder)
@@ -485,13 +488,7 @@ NetworkGenerate <- function(dams_snapped_joined,shape_river_simple,type){
       
       free_trib = unlist(lapply(result, `[[`, 4), use.names = F)
       free_trib = free_trib[!is.na(free_trib)]
-      
-      
-      #river_net_simplified$length_sq = river_net_simplified$length * river_net_simplified$length
-      #river_net_simplified$DCI = (river_net_simplified$length_sq)/(sum(river_net_simplified$length))^2
-      
-      #index[[1]][3] =   index[[1]][3] - as.numeric(sum(river_net_simplified$DCI[c(dewatered)]))
-      
+
       index[[1]] <- index_calculation_dewater(graph = river_graph,
                                               weight = "length",
                                               c_ij_flag = TRUE,
