@@ -489,13 +489,6 @@ index_calculation_dewater = function (graph, weight = "length", nodes_id = "name
                                          param_u, param_d, param, param_l,
                                          dewatered_nodes,party_dewatered_nodes,dwnstream_party_dew_nodes,free_trib_nodes) 
 {
-  nodes_id = "name"
-  dir_fragmentation_type = "symmetric"
-  pass_u = "pass_u"
-  pass_d = "pass_d"
-  pass_confluence = 1
-  print("nodes_id is ")
-  print(nodes_id)
   if (!igraph::is_igraph(graph)) 
     stop("'graph' must be an 'igraph' object")
   if (!(index_type %in% c("full", "reach", "sum"))) 
