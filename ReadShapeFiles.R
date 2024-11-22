@@ -23,7 +23,7 @@ library(rlist)
 # for each basin, extract the basin name, and pass river, dam and wshed shape file to index calculation function
 collate <- function(basin_vars){
   
-  #basin_vars = g[15][[1]]
+  #basin_vars = g[3][[1]]
   basin_name <- sub("(.+?)(\\_.*)", "\\1", basin_vars[1])
   
   # parse through file names to detect river, wshed and dam files
@@ -306,7 +306,7 @@ index_calc_wrapper <- function(name, shape_river, shape_dams, shape_basin,type){
     result = NULL
     #edges_split = split(edges %>% select(-Company),edges$Company,drop=FALSE)
     edges_split = split(edges,edges$Company,drop=FALSE)
-    result = lapply(edges_split,DewateredNodes_TributaryFinder)
+    result = lapply(edges_split,DewateredNodes_TributaryFinder,edges = edges)
     
     dewatered = unlist(lapply(result, `[[`, 1), use.names = F)
     dewatered = dewatered[!is.na(dewatered)]
@@ -321,17 +321,16 @@ index_calc_wrapper <- function(name, shape_river, shape_dams, shape_basin,type){
     free_trib = free_trib[!is.na(free_trib)]
     
     
-    #river_net_simplified$length_sq = river_net_simplified$length * river_net_simplified$length
-    #river_net_simplified$DCI = (river_net_simplified$length_sq)/(sum(river_net_simplified$length))^2
-    
-    #index[[1]][3] =   index[[1]][3] - as.numeric(sum(river_net_simplified$DCI[c(dewatered)]))
-    
     index[[1]] <- index_calculation_dewater(graph = river_graph,
                                             weight = "length",
                                             c_ij_flag = TRUE,
                                             B_ij_flag = FALSE,
                                             index_type = "full",
-                                            index_mode = "from")
+                                            index_mode = "from",
+                                            dewatered_nodes = dewatered,
+                                            party_dewatered_nodes = party_dewatered,
+                                            dwnstream_party_dew_nodes = dwnstream_party_dew,
+                                            free_trib_nodes = free_trib)
   }
     
   return(data.frame(name = name, DCIp = index[[1]][3]))
@@ -348,18 +347,20 @@ g <- split(filenames, g)
 g
 
 
-g[30]
+g[3]
 
 
 listofres = NULL
 #call function to loop through each basin calculating DCI
-#listofres = lapply(g,collate)
-listofres = lapply(g[30],collate)
+listofres = lapply(g,collate)
+listofres = lapply(g[3],collate)
 out.df <- (do.call("rbind", listofres))
 out.df <- out.df %>% `rownames<-`(seq_len(nrow(out.df)))
 names(out.df) <- c("Basin_name","DCIp","Type")
 out.df$DCIp = out.df$DCIp*100
 out.df
+
+out.df.wide = spread(out.df, key = Type, value = DCIp)
 
 
 # prepare the output for display
@@ -387,5 +388,6 @@ ggplot(out.df,aes(x=Type,y=DCIp))+geom_point(aes(color = Basin_name))+
   geom_line(aes(group = Basin_name,color = Basin_name))
 
 +facet_wrap(.~Basin_name)
+
 
             

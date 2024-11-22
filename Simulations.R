@@ -442,13 +442,13 @@ sum(river_net_simplified$DCI[c(2,6)])
   
 # A function that returns the dewatered segment, tributary joining dewatered segment,
 # and the segment downstream of ph for each SHP company
-DewateredNodes_TributaryFinder = function(vars){
+DewateredNodes_TributaryFinder = function(vars,edges){
     
     #vars = edges_split[[6]]
     # each SHP company should have a weir and Ph location, i.e it has to have two rows. If not, there 
     # isn't a dewatered stretch
     dewatered = as.numeric(NA) # initialization
-    tributary = as.numeric(NA)
+    free_trib = as.numeric(NA)
     partly_dewatered = as.numeric(NA)
     dwnstream_party_dew = as.numeric(NA)
     
@@ -468,25 +468,34 @@ DewateredNodes_TributaryFinder = function(vars){
         
         # the tributary joining the dewatered stretch
         # make sure to check the company name because powerhouse is not an unique identifier. 
-        tributary = as.numeric(edges$from[which(edges$to == (edges$from[which(edges$Comments == "Powerhouse" & edges$Company == vars$Company)]))])
-        tributary = tributary[!(tributary %in% dewatered)]
+        # vars$company[1] to refer to the company name
+        free_trib = as.numeric(edges$from[which(edges$to == (edges$from[which(edges$Comments == "Powerhouse" & edges$Company == vars$Company[1])]))])
+        free_trib = free_trib[!(free_trib %in% dewatered)]
         }
     }
     return(data.frame(dewatered = dewatered,partly_dewatered = partly_dewatered,
-                      dwnstream_party_dew = dwnstream_party_dew,free_trib = tributary))
+                      dwnstream_party_dew = dwnstream_party_dew,free_trib = free_trib))
   }
 
 
-
 # This function is similar to the RiverConn's index_calculation function but the a[i,j] matrix has been 
-# edited to calculate the effect of dewatering. 
+# edited to calculate the effect of dewatering. It receives additional paramters 
+# dewatered,party_dewatered,dwnstream_party_dew,free_trib which are node numbers corresponding to those segments of the river
 
 index_calculation_dewater = function (graph, weight = "length", nodes_id = "name", index_type = "full", 
-                                      index_mode = "to", c_ij_flag = TRUE, B_ij_flag = TRUE, dir_fragmentation_type = "symmetric", 
-                                      pass_confluence = 1, pass_u = "pass_u", pass_d = "pass_d", 
-                                      field_B = "length", dir_distance_type = "symmetric", disp_type = "exponential", 
-                                      param_u, param_d, param, param_l) 
+                                         index_mode = "to", c_ij_flag = TRUE, B_ij_flag = TRUE, dir_fragmentation_type = "symmetric", 
+                                         pass_confluence = 1, pass_u = "pass_u", pass_d = "pass_d", 
+                                         field_B = "length", dir_distance_type = "symmetric", disp_type = "exponential", 
+                                         param_u, param_d, param, param_l,
+                                         dewatered_nodes,party_dewatered_nodes,dwnstream_party_dew_nodes,free_trib_nodes) 
 {
+  nodes_id = "name"
+  dir_fragmentation_type = "symmetric"
+  pass_u = "pass_u"
+  pass_d = "pass_d"
+  pass_confluence = 1
+  print("nodes_id is ")
+  print(nodes_id)
   if (!igraph::is_igraph(graph)) 
     stop("'graph' must be an 'igraph' object")
   if (!(index_type %in% c("full", "reach", "sum"))) 
@@ -590,7 +599,7 @@ index_calculation_dewater = function (graph, weight = "length", nodes_id = "name
         # Since RiverConn alters the upland drainage area while slicing, use st_join to find the upland area from the original hydrosheds file
         free_trib_attr = st_join(river_net_simplified[river_net_simplified$NodeID == free_trib[i],], shape_river, join = st_equals_exact, par = 0.001 )
         free_trib_wshed = free_trib_attr$UPLAND_SKM.y
-      
+        
         # Find the upland area of the partly dew_wshed. Riverconn slicing doesn't affect this paramter much
         party_dew_wshed = river_net_simplified$UPLAND_SKM[river_net_simplified$NodeID == party_dewatered[i]]
         
@@ -598,7 +607,7 @@ index_calculation_dewater = function (graph, weight = "length", nodes_id = "name
         agg_mat[party_dewatered[i],party_dewatered[i]] = free_trib_wshed/party_dew_wshed
       }
     }
-
+    
     
     
     index_num = t(v_weights) %*% agg_mat %*% v_weights
@@ -653,6 +662,8 @@ index_calculation_dewater = function (graph, weight = "length", nodes_id = "name
   }
   return(index)
 }
+
+
 
 river_net_simplified[river_net_simplified$NodeID == free_trib,]
 

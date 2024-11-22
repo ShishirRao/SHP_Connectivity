@@ -477,7 +477,7 @@ NetworkGenerate <- function(dams_snapped_joined,shape_river_simple,type){
       result = NULL
       #edges_split = split(edges %>% select(-Company),edges$Company,drop=FALSE)
       edges_split = split(edges,edges$Company,drop=FALSE)
-      result = lapply(edges_split,DewateredNodes_TributaryFinder)
+      result = lapply(edges_split,DewateredNodes_TributaryFinder,edges = edges)
       
       dewatered = unlist(lapply(result, `[[`, 1), use.names = F)
       dewatered = dewatered[!is.na(dewatered)]
@@ -496,7 +496,8 @@ NetworkGenerate <- function(dams_snapped_joined,shape_river_simple,type){
                                               c_ij_flag = TRUE,
                                               B_ij_flag = FALSE,
                                               index_type = "full",
-                                              index_mode = "from")
+                                              index_mode = "from",
+                                              dewatered,party_dewatered,dwnstream_party_dew,free_trib)
     }
 
   return(index[[1]])
