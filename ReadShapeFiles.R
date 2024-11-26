@@ -360,6 +360,17 @@ names(out.df) <- c("Basin_name","DCIp","Type")
 out.df$DCIp = out.df$DCIp*100
 out.df
 
+unique(out.df$Basin_name)
+
+out.df$Direction = "West"
+out.df$Direction[out.df$Basin_name == "Bhima" &
+                 out.df$Basin_name == "Kaveri" &
+                 out.df$Basin_name == "Krishna" &
+                 out.df$Basin_name == "Tunga" &
+                 out.df$Basin_name == "Palar" &
+                out.df$Basin_name == "NorthPennar" &
+                  out.df$Basin_name == "SouthPennar"] = "East"
+
 out.df.wide = spread(out.df, key = Type, value = DCIp)
 #write.csv(out.df.wide, "E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity/Basins/DCI_v3.csv")
 
@@ -387,6 +398,10 @@ getwd()
 
 ggplot(out.df,aes(x=Type,y=DCIp))+geom_point(aes(color = Basin_name))+
   geom_line(aes(group = Basin_name,color = Basin_name))
+
+ggplot(out.df,aes(x=Type,y=DCIp))+geom_point(aes(color = Basin_name))+
+  geom_line(aes(group = Direction,color = Direction))
+
 
 +facet_wrap(.~Basin_name)
 

@@ -28,19 +28,19 @@ setwd("E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity")
 #shape_SHPs_PH <- st_read("Nethravathi/Nethravathi_PH.shp")
 
 
-#shape_river <- st_read("Kaveri/Kaveri_river.shp")
-#shape_river <- st_read("Kaveri/Kaveri_river_v2.shp") #confluences removed
-#shape_basin <- st_read("Kaveri/Kaveri_sub_basin_Karnataka_wshed.shp")
-#shape_SHPs <- st_read("Kaveri/Kaveri_SHPs.shp")
-#shape_SHPs_PH <- st_read("Kaveri/Kaveri_PH.shp")
-#shape_Large_dams <- st_read("Kaveri/Kaveri_LargeDams.shp")
+shape_river <- st_read("Kaveri/Kaveri_river.shp")
+shape_river <- st_read("Kaveri/Kaveri_river_v2.shp") #confluences removed
+shape_basin <- st_read("Kaveri/Kaveri_sub_basin_Karnataka_wshed.shp")
+shape_SHPs <- st_read("Kaveri/Kaveri_SHPs.shp")
+shape_SHPs_PH <- st_read("Kaveri/Kaveri_PH.shp")
+shape_Large_dams <- st_read("Kaveri/Kaveri_LargeDams.shp")
 
-shape_river <- st_read("Sharavathi/Sharavathi_river.shp") #confluences removed
-shape_river <- st_read("Sharavathi/Sharavathi_river_v2.shp") #confluences removed
-shape_basin <- st_read("Sharavathi/Sharavathi_wshed.shp")
-shape_SHPs <- st_read("Sharavathi/Sharavathi_SHPs.shp")
-shape_Large_dams <- st_read("Sharavathi/Sharavathi_LargeDams.shp")
-shape_SHPs_PH <- st_read("Sharavathi/Sharavathi_PH.shp")
+#shape_river <- st_read("Sharavathi/Sharavathi_river.shp") #confluences removed
+#shape_river <- st_read("Sharavathi/Sharavathi_river_v2.shp") #confluences removed
+#shape_basin <- st_read("Sharavathi/Sharavathi_wshed.shp")
+#shape_SHPs <- st_read("Sharavathi/Sharavathi_SHPs.shp")
+#shape_Large_dams <- st_read("Sharavathi/Sharavathi_LargeDams.shp")
+#shape_SHPs_PH <- st_read("Sharavathi/Sharavathi_PH.shp")
 
 #shape_river <- st_read("Haladi/Haladi_river.shp")
 #shape_river <- st_read("Haladi/Haladi_river_v2.shp")
@@ -112,7 +112,8 @@ shape_SHPs_PH = shape_SHPs_PH[shape_SHPs_PH$Sitatued.o == "river" | shape_SHPs_P
 #combine with other large dams. Create a identified for large dams
 shape_Large_dams$Sitatued.o = "river_non_SHP"
 
-shape_dams = bind_rows(list(shape_SHPs, shape_Large_dams))
+
+#shape_dams = bind_rows(list(shape_SHPs, shape_Large_dams))
 shape_dams = bind_rows(list(shape_SHPs, shape_Large_dams,shape_SHPs_PH))
 #shape_dams = bind_rows(list(shape_SHPs, shape_SHPs_PH))
 #shape_dams = shape_SHPs
@@ -260,7 +261,7 @@ nrow(dams_snapped_joined)
 
 #st_write(dams_snapped, "Kaveri/dams_snapped.shp",delete_layer = TRUE)
 #st_write(shape_river_small, "Haladi/shape_river_small.shp",delete_layer = TRUE)
-#st_write(dams_snapped_joined, "Sharavathi/dams_snapped_joined.shp",delete_layer = TRUE)
+#st_write(dams_snapped_joined, "Kaveri/dams_snapped_joined.shp",delete_layer = TRUE)
 
 headwaters_checking <- headwaters_dam(dams_snapped_joined, shape_river_simple)
 head(headwaters_checking$flag_headwater)
@@ -297,12 +298,19 @@ if (nrow(dams_snapped_joined[dams_snapped_joined$Sitatued.o == "river_non_SHP" &
                            !is.na(dams_snapped_joined$Comments),]) > 0) {
   
   # select rows for which hydropower company has two rows -- 1) dam and 2) powerhouse
-  DCI_Dewater = NetworkGenerate((dams_snapped_joined %>% group_by(Company) %>% filter(n() > 1)),shape_river_simple,"Dewater")
+  DCI_Dewater = NetworkGenerate((dams_snapped_joined %>% group_by(Company) %>% filter(n() > 1))%>% ungroup(),shape_river_simple,"Dewater")
   
 }
 
+temp = dams_snapped_joined[dams_snapped_joined$Sitatued.o == "river_non_SHP",]
+temp = dams_snapped_joined[dams_snapped_joined$Sitatued.o != "river_non_SHP",]
+temp = dams_snapped_joined %>% group_by(Company) %>% filter(n() > 1) %>% ungroup()
 
-dams_snapped_joined = dams_snapped_joined %>% group_by(Company) %>% filter(n() > 1)
+
+
+#dams_snapped_joined = dams_snapped_joined %>% group_by(Company) %>% filter(n() > 1) %>% ungroup()
+dams_snapped_joined = dams_snapped_joined[dams_snapped_joined$Sitatued.o == "river_non_SHP",]
+
 
 # This function generates a network link for the set of dams. The dam set could be of different scenarios 1) SHP 2)large 3) dewatered )
 NetworkGenerate <- function(dams_snapped_joined,shape_river_simple,type){
@@ -317,9 +325,6 @@ NetworkGenerate <- function(dams_snapped_joined,shape_river_simple,type){
       mutate(id_barrier = NA, pass_u = NA, pass_d = NA,Company = NA,Comments = NA) %>%
       rename(geometry = x)) %>%
     mutate(id_links = 1:nrow(.))
-  
-  print(network_links)
-  
   
   # Split river network
   river_net_simplified <- lwgeom::st_split(shape_river_simple, network_links) %>%
@@ -405,7 +410,7 @@ NetworkGenerate <- function(dams_snapped_joined,shape_river_simple,type){
     ggspatial::annotation_scale(location = "bl", style = "ticks")
   
   #st_write(network_links, "Nethravathi/network_links.shp")
-  #st_write(river_net_simplified, "Bhima/river_net_simplified.shp",delete_layer = TRUE)
+  #st_write(river_net_simplified, "Kaveri/river_net_simplified.shp",delete_layer = TRUE)
 
   # this won't work because not all rivers drain to the sea. Some are sub-basins
   #outlet <- river_net_simplified$NodeID[river_net_simplified$DIST_DN_KM == 0 ] 
@@ -508,8 +513,11 @@ NetworkGenerate <- function(dams_snapped_joined,shape_river_simple,type){
                                               B_ij_flag = FALSE,
                                               index_type = "full",
                                               index_mode = "from",
-                                              dewatered,party_dewatered,dwnstream_party_dew,free_trib)
-    }
+                                              dewatered_nodes = dewatered,
+                                              party_dewatered_nodes = party_dewatered,
+                                              dwnstream_party_dew_nodes = dwnstream_party_dew,
+                                              free_trib_nodes = free_trib)
+      }
 
   return(index[[1]])
 }
