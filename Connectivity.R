@@ -309,7 +309,7 @@ temp = dams_snapped_joined %>% group_by(Company) %>% filter(n() > 1) %>% ungroup
 
 
 #dams_snapped_joined = dams_snapped_joined %>% group_by(Company) %>% filter(n() > 1) %>% ungroup()
-dams_snapped_joined = dams_snapped_joined[dams_snapped_joined$Sitatued.o == "river_non_SHP",]
+dams_snapped_joined = dams_snapped_joined[dams_snapped_joined$Sitatued.o != "river_non_SHP",]
 
 
 # This function generates a network link for the set of dams. The dam set could be of different scenarios 1) SHP 2)large 3) dewatered )

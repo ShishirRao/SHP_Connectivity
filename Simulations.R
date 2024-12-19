@@ -444,7 +444,7 @@ sum(river_net_simplified$DCI[c(2,6)])
 # and the segment downstream of ph for each SHP company
 DewateredNodes_TributaryFinder = function(vars,edges){
     
-    #vars = edges_split[[6]]
+    #vars = edges_split[[9]]
     # each SHP company should have a weir and Ph location, i.e it has to have two rows. If not, there 
     # isn't a dewatered stretch
     dewatered = as.numeric(NA) # initialization
@@ -568,6 +568,10 @@ index_calculation_dewater = function (graph, weight = "length", nodes_id = "name
         agg_mat[dewatered[i],1:nrow(agg_mat)] = agg_mat[1:ncol(agg_mat),dewatered[i]] = 0  
       }
     }
+    #any(is.na(agg_mat))
+    #which(is.na(agg_mat), arr.ind = TRUE)
+  
+    
     #Now connect the partly dewatered and free trib to the rest of the network
     if(length(party_dewatered) >= 1){
       for(i in 1:length(party_dewatered)){
@@ -592,6 +596,13 @@ index_calculation_dewater = function (graph, weight = "length", nodes_id = "name
         # Since RiverConn alters the upland drainage area while slicing, use st_join to find the upland area from the original hydrosheds file
         free_trib_attr = st_join(river_net_simplified[river_net_simplified$NodeID == free_trib[i],], shape_river, join = st_equals_exact, par = 0.001 )
         free_trib_wshed = free_trib_attr$UPLAND_SKM.y
+        
+        # in case the free flowing trib is dammed, st_join with st_equals_exact won't work because the free-trib has nodes on it and so, that segment
+        # won't coincide with the hydrosheds segment. st_join returns NA for upland skm. To resolve this, use st_within for this case
+        if (is.na(free_trib_attr$UPLAND_SKM.y)){
+          free_trib_attr = st_join(river_net_simplified[river_net_simplified$NodeID == free_trib[i],], shape_river, join = st_within, par = 0.001 )
+          free_trib_wshed = free_trib_attr$UPLAND_SKM.y
+        }
         
         # Find the upland area of the partly dew_wshed. Riverconn slicing doesn't affect this paramter much
         party_dew_wshed = river_net_simplified$UPLAND_SKM[river_net_simplified$NodeID == party_dewatered[i]]
