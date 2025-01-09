@@ -18,7 +18,7 @@ library("riverconn")
 library("shp2graph")
 library(ggrepel)
 
-setwd("E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity")
+setwd("E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity/path")
 
 
 #shape_river <- st_read("Nethravathi/Nethravathi_river.shp")
