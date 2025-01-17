@@ -18,7 +18,7 @@ library("riverconn")
 library("shp2graph")
 library(ggrepel)
 
-setwd("E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity/path")
+setwd("E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity/")
 
 
 #shape_river <- st_read("Nethravathi/Nethravathi_river.shp")
@@ -26,14 +26,15 @@ setwd("E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity/path")
 #shape_basin <- st_read("Nethravathi/Nethravathi_wshed.shp")
 #shape_SHPs <- st_read("Nethravathi/Nethravathi_SHPs.shp")
 #shape_SHPs_PH <- st_read("Nethravathi/Nethravathi_PH.shp")
+#shape_SHPs_new <- st_read("Nethravathi/Nethravathi_SHPs_new.shp")
 
 
-shape_river <- st_read("Kaveri/Kaveri_river.shp")
-shape_river <- st_read("Kaveri/Kaveri_river_v2.shp") #confluences removed
-shape_basin <- st_read("Kaveri/Kaveri_sub_basin_Karnataka_wshed.shp")
-shape_SHPs <- st_read("Kaveri/Kaveri_SHPs.shp")
-shape_SHPs_PH <- st_read("Kaveri/Kaveri_PH.shp")
-shape_Large_dams <- st_read("Kaveri/Kaveri_LargeDams.shp")
+#shape_river <- st_read("Kaveri/Kaveri_river.shp")
+#shape_river <- st_read("Kaveri/Kaveri_river_v2.shp") #confluences removed
+#shape_basin <- st_read("Kaveri/Kaveri_sub_basin_Karnataka_wshed.shp")
+#shape_SHPs <- st_read("Kaveri/Kaveri_SHPs.shp")
+#shape_SHPs_PH <- st_read("Kaveri/Kaveri_PH.shp")
+#shape_Large_dams <- st_read("Kaveri/Kaveri_LargeDams.shp")
 
 #shape_river <- st_read("Sharavathi/Sharavathi_river.shp") #confluences removed
 #shape_river <- st_read("Sharavathi/Sharavathi_river_v2.shp") #confluences removed
@@ -61,6 +62,12 @@ shape_Large_dams <- st_read("Kaveri/Kaveri_LargeDams.shp")
 #shape_basin <- st_read("Gurupura/Gurupura_wshed.shp")
 #shape_SHPs <- st_read("Gurupura/Gurupura_SHPs.shp")
 #shape_SHPs_PH <- st_read("Gurupura/Gurupura_PH.shp")
+#shape_SHPs_new <- st_read("Gurupura/Gurupura_SHPs_new.shp")
+
+shape_river <- st_read("Shambhavi/Shambhavi_river.shp")
+shape_basin <- st_read("Shambhavi/Shambhavi_wshed.shp")
+shape_SHPs_new <- st_read("Shambhavi/Shambhavi_SHPs_new.shp")
+
 
 #shape_river <- st_read("Tunga/Tunga_river.shp")
 #shape_river <- st_read("Tunga/Tunga_river_v2.shp")
@@ -99,6 +106,8 @@ shape_Large_dams <- st_read("Kaveri/Kaveri_LargeDams.shp")
 #shape_basin <- st_read("Chakra/Chakra_wshed.shp")
 #shape_Large_dams <- st_read("Chakra/Chakra_LargeDams.shp")
 
+# Load the proposed SHP locations to the SHP variable
+shape_SHPs = shape_SHPs_new[shape_SHPs_new$Checked == TRUE,]
 
 # remove SHPs on irrigation canals, tank outlets and offshore SHPs and keep only stand-alone (river) and multipurpose SHPs
 shape_SHPs = shape_SHPs[shape_SHPs$Sitatued.o == "river" | shape_SHPs$Sitatued.o == "part of bigger project",]
@@ -114,9 +123,9 @@ shape_Large_dams$Sitatued.o = "river_non_SHP"
 
 
 #shape_dams = bind_rows(list(shape_SHPs, shape_Large_dams))
-shape_dams = bind_rows(list(shape_SHPs, shape_Large_dams,shape_SHPs_PH))
+#shape_dams = bind_rows(list(shape_SHPs, shape_Large_dams,shape_SHPs_PH))
 #shape_dams = bind_rows(list(shape_SHPs, shape_SHPs_PH))
-#shape_dams = shape_SHPs
+shape_dams = shape_SHPs
 #shape_dams = shape_Large_dams
 
 nrow(shape_SHPs)
@@ -206,6 +215,9 @@ ggplot() +
 shape_dams <- shape_dams %>%
   mutate(id = 1:nrow(.))
 
+names(shape_dams)
+shape_dams$Act_Lat_W_
+
 # Snap dams
 dams_snapped <- snap_to_river(shape_dams,
                               shape_river_simple %>% st_sf(),
@@ -253,15 +265,18 @@ ggplot() +
 
 dams_snapped$id[(which(dams_snapped$id %in% dams_snapped_joined$id == FALSE))]
 
+
 nrow(shape_SHPs)
 nrow(shape_SHPs_PH)
 nrow(shape_Large_dams)
 nrow(shape_dams)
 nrow(dams_snapped_joined)
 
-#st_write(dams_snapped, "Kaveri/dams_snapped.shp",delete_layer = TRUE)
+
+
+#st_write(dams_snapped, "Nethravathi/dams_snapped.shp",delete_layer = TRUE)
 #st_write(shape_river_small, "Haladi/shape_river_small.shp",delete_layer = TRUE)
-#st_write(dams_snapped_joined, "Kaveri/dams_snapped_joined.shp",delete_layer = TRUE)
+#st_write(dams_snapped_joined, "Gurupura/dams_snapped_joined.shp",delete_layer = TRUE)
 
 headwaters_checking <- headwaters_dam(dams_snapped_joined, shape_river_simple)
 head(headwaters_checking$flag_headwater)
@@ -290,6 +305,16 @@ DCI_SHP = NetworkGenerate(dams_snapped_joined[dams_snapped_joined$Sitatued.o != 
 
 #SHP weir and ph = dewatering
 DCI_Dewater = NetworkGenerate(dams_snapped_joined[dams_snapped_joined$Sitatued.o != "river_non_SHP",],shape_river_simple,"Dewater")
+
+
+#temp = dams_snapped_joined[dams_snapped_joined$Sitatued.o != "river_non_SHP" &
+#                             (dams_snapped_joined$Comments != "Powerhouse" | 
+#                               is.na(dams_snapped_joined$Comments)),]
+
+# proposed dams
+DCI_SHP_new = NetworkGenerate(dams_snapped_joined[dams_snapped_joined$Sitatued.o != "river_non_SHP" &
+                                                       (dams_snapped_joined$Comments != "Powerhouse" | 
+                                                          is.na(dams_snapped_joined$Comments)),],shape_river_simple,"SHP")
 
 
 # If there are power houses for large dams, then, for dewatering, we must include large dam locations and their powerhouses too. 
