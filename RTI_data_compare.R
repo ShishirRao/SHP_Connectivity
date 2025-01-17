@@ -11,13 +11,11 @@ prop_old_Gurupura = as.data.frame(prop_old_Gurupura)
 names(old_full)
 class(old_full$kredl_lat)
 
-prop_old_Gurupura$kredl_lat = as.character(prop_old_Gurupura$kredl_lat)
-prop_old_Gurupura$kredl_long = as.character(prop_old_Gurupura$kredl_long)
-
-old_full$kredl_lat = as.character(old_full$kredl_lat)
-old_full$kredl_long =as.character(old_full$kredl_long)
+prop_old_Suvarna = st_read("Suvarna/Suvarna_SHPs_new_2010.shp")
+prop_new_Suvarna = st_read("Suvarna/Suvarna_SHPs_new.shp")
 
 
+prop_new_Suvarna$Company 
 
-temp = left_join(prop_old_Gurupura,old_full,join_by(Company,District,Capacity,kredl_lat,kredl_long))
+prop_old_Suvarna$Company [(which(prop_old_Suvarna$Company %in% prop_new_Suvarna$Company== FALSE))]
 

@@ -50,12 +50,12 @@ setwd("E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity/")
 #shape_Large_dams <- st_read("Haladi/Haladi_LargeDams.shp")
 #shape_SHPs_PH <- st_read("Haladi/Haladi_PH.shp")
 
-
-#shape_river <- st_read("Suvarna/Suvarna_river.shp")
-#shape_river <- st_read("Suvarna/Suvarna_river_v2.shp")
-#shape_basin <- st_read("Suvarna/Suvarna_wshed.shp")
-#shape_SHPs <- st_read("Suvarna/Suvarna_SHPs.shp")
-#shape_SHPs_PH <- st_read("Suvarna/Suvarna_PH.shp")
+shape_river <- st_read("Suvarna/Suvarna_river.shp")
+shape_river <- st_read("Suvarna/Suvarna_river_v2.shp")
+shape_basin <- st_read("Suvarna/Suvarna_wshed.shp")
+shape_SHPs <- st_read("Suvarna/Suvarna_SHPs.shp")
+shape_SHPs_PH <- st_read("Suvarna/Suvarna_PH.shp")
+shape_SHPs_new <- st_read("Suvarna/Suvarna_SHPs_new.shp")
 
 #shape_river <- st_read("Gurupura/Gurupura_river.shp")
 #shape_river <- st_read("Gurupura/Gurupura_river_v2.shp")
@@ -64,9 +64,9 @@ setwd("E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity/")
 #shape_SHPs_PH <- st_read("Gurupura/Gurupura_PH.shp")
 #shape_SHPs_new <- st_read("Gurupura/Gurupura_SHPs_new.shp")
 
-shape_river <- st_read("Shambhavi/Shambhavi_river.shp")
-shape_basin <- st_read("Shambhavi/Shambhavi_wshed.shp")
-shape_SHPs_new <- st_read("Shambhavi/Shambhavi_SHPs_new.shp")
+#shape_river <- st_read("Shambhavi/Shambhavi_river.shp")
+#shape_basin <- st_read("Shambhavi/Shambhavi_wshed.shp")
+#shape_SHPs_new <- st_read("Shambhavi/Shambhavi_SHPs_new.shp")
 
 
 #shape_river <- st_read("Tunga/Tunga_river.shp")
@@ -275,8 +275,8 @@ nrow(dams_snapped_joined)
 
 
 #st_write(dams_snapped, "Nethravathi/dams_snapped.shp",delete_layer = TRUE)
-#st_write(shape_river_small, "Haladi/shape_river_small.shp",delete_layer = TRUE)
-#st_write(dams_snapped_joined, "Gurupura/dams_snapped_joined.shp",delete_layer = TRUE)
+#st_write(shape_river_small, "Suvarna/shape_river_small.shp",delete_layer = TRUE)
+#st_write(dams_snapped_joined, "Suvarna/dams_snapped_joined.shp",delete_layer = TRUE)
 
 headwaters_checking <- headwaters_dam(dams_snapped_joined, shape_river_simple)
 head(headwaters_checking$flag_headwater)
