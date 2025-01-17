@@ -50,12 +50,17 @@ setwd("E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity/")
 #shape_Large_dams <- st_read("Haladi/Haladi_LargeDams.shp")
 #shape_SHPs_PH <- st_read("Haladi/Haladi_PH.shp")
 
-shape_river <- st_read("Suvarna/Suvarna_river.shp")
-shape_river <- st_read("Suvarna/Suvarna_river_v2.shp")
-shape_basin <- st_read("Suvarna/Suvarna_wshed.shp")
-shape_SHPs <- st_read("Suvarna/Suvarna_SHPs.shp")
-shape_SHPs_PH <- st_read("Suvarna/Suvarna_PH.shp")
-shape_SHPs_new <- st_read("Suvarna/Suvarna_SHPs_new.shp")
+#shape_river <- st_read("Suvarna/Suvarna_river.shp")
+#shape_river <- st_read("Suvarna/Suvarna_river_v2.shp")
+#shape_basin <- st_read("Suvarna/Suvarna_wshed.shp")
+#shape_SHPs <- st_read("Suvarna/Suvarna_SHPs.shp")
+#shape_SHPs_PH <- st_read("Suvarna/Suvarna_PH.shp")
+#shape_SHPs_new <- st_read("Suvarna/Suvarna_SHPs_new.shp")
+
+#shape_river <- st_read("Sita/Sita_river.shp")
+shape_river <- st_read("Sita/Sita_river_v2.shp")
+shape_basin <- st_read("Sita/Sita_wshed.shp")
+shape_SHPs_new <- st_read("Sita/Sita_SHPs_new.shp")
 
 #shape_river <- st_read("Gurupura/Gurupura_river.shp")
 #shape_river <- st_read("Gurupura/Gurupura_river_v2.shp")
@@ -275,8 +280,8 @@ nrow(dams_snapped_joined)
 
 
 #st_write(dams_snapped, "Nethravathi/dams_snapped.shp",delete_layer = TRUE)
-#st_write(shape_river_small, "Suvarna/shape_river_small.shp",delete_layer = TRUE)
-#st_write(dams_snapped_joined, "Suvarna/dams_snapped_joined.shp",delete_layer = TRUE)
+#st_write(shape_river_small, "Sita/shape_river_small.shp",delete_layer = TRUE)
+#st_write(dams_snapped_joined, "Sita/dams_snapped_joined.shp",delete_layer = TRUE)
 
 headwaters_checking <- headwaters_dam(dams_snapped_joined, shape_river_simple)
 head(headwaters_checking$flag_headwater)
@@ -390,7 +395,7 @@ NetworkGenerate <- function(dams_snapped_joined,shape_river_simple,type){
   shp_check <- check_components(network_links, river_net_simplified)
   head(shp_check)
   
-  #st_write(shp_check, "Krishna/shp_check.shp")
+  #st_write(shp_check, "Sita/shp_check.shp")
   #st_write(river_net_simplified,"kaveri/river_net_simplified.shp")
   
   
@@ -435,7 +440,7 @@ NetworkGenerate <- function(dams_snapped_joined,shape_river_simple,type){
     ggspatial::annotation_scale(location = "bl", style = "ticks")
   
   #st_write(network_links, "Nethravathi/network_links.shp")
-  #st_write(river_net_simplified, "Kaveri/river_net_simplified.shp",delete_layer = TRUE)
+  #st_write(river_net_simplified, "Sita/river_net_simplified.shp",delete_layer = TRUE)
 
   # this won't work because not all rivers drain to the sea. Some are sub-basins
   #outlet <- river_net_simplified$NodeID[river_net_simplified$DIST_DN_KM == 0 ] 
