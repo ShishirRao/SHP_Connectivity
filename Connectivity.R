@@ -109,10 +109,20 @@ setwd("E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity/")
 #shape_Large_dams <- st_read("Gangavali/Gangavali_LargeDams.shp")
 
 #shape_river <- st_read("Chakra/Chakra_river.shp")
-shape_river <- st_read("Chakra/Chakra_river_v2.shp")
-shape_basin <- st_read("Chakra/Chakra_wshed.shp")
+#shape_river <- st_read("Chakra/Chakra_river_v2.shp")
+#shape_basin <- st_read("Chakra/Chakra_wshed.shp")
 #shape_Large_dams <- st_read("Chakra/Chakra_LargeDams.shp")
-shape_SHPs_new <- st_read("Chakra/Chakra_SHPs_new.shp")
+#shape_SHPs_new <- st_read("Chakra/Chakra_SHPs_new.shp")
+
+#shape_river <- st_read("Kolluru/Kolluru_river.shp")
+#shape_basin <- st_read("Kolluru/Kolluru_wshed.shp")
+#shape_SHPs_new <- st_read("Kolluru/Kolluru_SHPs_new.shp")
+
+
+shape_river <- st_read("Sankadagundi/Sankadagundi_river.shp")
+shape_basin <- st_read("Sankadagundi/Sankadagundi_wshed.shp")
+shape_SHPs_new <- st_read("Sankadagundi/Sankadagundi_SHPs_new.shp")
+
 
 # Load the proposed SHP locations to the SHP variable
 shape_SHPs = shape_SHPs_new[shape_SHPs_new$Checked == TRUE,]
