@@ -119,9 +119,13 @@ setwd("E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity/")
 #shape_SHPs_new <- st_read("Kolluru/Kolluru_SHPs_new.shp")
 
 
-shape_river <- st_read("Sankadagundi/Sankadagundi_river.shp")
-shape_basin <- st_read("Sankadagundi/Sankadagundi_wshed.shp")
-shape_SHPs_new <- st_read("Sankadagundi/Sankadagundi_SHPs_new.shp")
+#shape_river <- st_read("Sankadagundi/Sankadagundi_river.shp")
+#shape_basin <- st_read("Sankadagundi/Sankadagundi_wshed.shp")
+#shape_SHPs_new <- st_read("Sankadagundi/Sankadagundi_SHPs_new.shp")
+
+shape_river <- st_read("Venkatapura/Venkatapura_river.shp")
+shape_basin <- st_read("Venkatapura/Venkatapura_wshed.shp")
+shape_SHPs_new <- st_read("Venkatapura/Venkatapura_SHPs_new.shp")
 
 
 # Load the proposed SHP locations to the SHP variable
