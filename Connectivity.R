@@ -100,14 +100,17 @@ setwd("E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity/")
 #shape_SHPs_PH <- st_read("Bhima/Bhima_PH.shp")
 
 #shape_river <- st_read("Kali/Kali_river.shp")
-#shape_river <- st_read("Kali/Kali_river_v2.shp")
-#shape_basin <- st_read("Kali/Kali_wshed.shp")
+shape_river <- st_read("Kali/Kali_river_v2.shp")
+shape_basin <- st_read("Kali/Kali_wshed.shp")
 #shape_SHPs <- st_read("Kali/Kali_SHPs.shp")
 #shape_Large_dams <- st_read("Kali/Kali_LargeDams.shp")
+shape_SHPs_new <- st_read("Kali/Kali_SHPs_new.shp")
 
 #shape_river <- st_read("Gangavali/Gangavali_river.shp")
 #shape_basin <- st_read("Gangavali/Gangavali_wshed.shp")
 #shape_Large_dams <- st_read("Gangavali/Gangavali_LargeDams.shp")
+#shape_SHPs_new <- st_read("Gangavali/Gangavali_SHPs_new.shp")
+
 
 #shape_river <- st_read("Chakra/Chakra_river.shp")
 #shape_river <- st_read("Chakra/Chakra_river_v2.shp")
@@ -129,9 +132,16 @@ setwd("E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity/")
 #shape_SHPs_new <- st_read("Venkatapura/Venkatapura_SHPs_new.shp")
 
 
-shape_river <- st_read("Gundbala/Gundabala_river.shp")
-shape_basin <- st_read("Gundbala/Gundabala_wshed.shp")
-shape_SHPs_new <- st_read("Gundbala/Gundabala_SHPs_new.shp")
+#shape_river <- st_read("Gundbala/Gundabala_river.shp")
+#shape_basin <- st_read("Gundbala/Gundabala_wshed.shp")
+#shape_SHPs_new <- st_read("Gundbala/Gundabala_SHPs_new.shp")
+
+#shape_river <- st_read("Aghanashini/Aghanashini_river.shp")
+#shape_river <- st_read("Aghanashini/Aghanashini_river_v2.shp")
+#shape_basin <- st_read("Aghanashini/Aghanashini_wshed.shp")
+#shape_SHPs_new <- st_read("Aghanashini/Aghanashini_SHPs_new.shp")
+
+
 
 
 # Load the proposed SHP locations to the SHP variable
@@ -291,8 +301,8 @@ ggplot() +
   ggspatial::annotation_scale(location = "bl", style = "ticks") +
   ggspatial::annotation_north_arrow(location = "br")
 
-dams_snapped$id[(which(dams_snapped$id %in% dams_snapped_joined$id == FALSE))]
-
+ dams_snapped$id[(which(dams_snapped$id %in% dams_snapped_joined$id == FALSE))]
+ 
 
 nrow(shape_SHPs)
 nrow(shape_SHPs_PH)
