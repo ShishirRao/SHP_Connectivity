@@ -100,11 +100,11 @@ setwd("E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity/")
 #shape_SHPs_PH <- st_read("Bhima/Bhima_PH.shp")
 
 #shape_river <- st_read("Kali/Kali_river.shp")
-shape_river <- st_read("Kali/Kali_river_v2.shp")
-shape_basin <- st_read("Kali/Kali_wshed.shp")
+#shape_river <- st_read("Kali/Kali_river_v2.shp")
+#shape_basin <- st_read("Kali/Kali_wshed.shp")
 #shape_SHPs <- st_read("Kali/Kali_SHPs.shp")
 #shape_Large_dams <- st_read("Kali/Kali_LargeDams.shp")
-shape_SHPs_new <- st_read("Kali/Kali_SHPs_new.shp")
+#shape_SHPs_new <- st_read("Kali/Kali_SHPs_new.shp")
 
 #shape_river <- st_read("Gangavali/Gangavali_river.shp")
 #shape_basin <- st_read("Gangavali/Gangavali_wshed.shp")
@@ -141,6 +141,10 @@ shape_SHPs_new <- st_read("Kali/Kali_SHPs_new.shp")
 #shape_basin <- st_read("Aghanashini/Aghanashini_wshed.shp")
 #shape_SHPs_new <- st_read("Aghanashini/Aghanashini_SHPs_new.shp")
 
+
+#shape_river <- st_read("Hattikeri/Hattikeri_river.shp")
+#shape_basin <- st_read("Hattikeri/Hattikeri_wshed.shp")
+#shape_SHPs_new <- st_read("Hattikeri/Hattikeri_SHPs_new.shp")
 
 
 
