@@ -85,12 +85,13 @@ setwd("E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity/")
 
 #shape_river <- st_read("Krishna/Krishna_river.shp")
 #shape_river <- st_read("Krishna/Krishna_river_v2.shp")
-#shape_river <- st_read("Krishna/Krishna_river_v3.shp")
+shape_river <- st_read("Krishna/Krishna_river_v3.shp")
 #shape_basin <- st_read("Krishna/Krishna_wshed.shp")
-#shape_basin <- st_read("Krishna/Krishna_wshed_v2.shp")
+shape_basin <- st_read("Krishna/Krishna_wshed_v2.shp")
 #shape_SHPs <- st_read("Krishna/Krishna_SHPs.shp")
 #shape_Large_dams <- st_read("Krishna/Krishna_LargeDams.shp")
 #shape_SHPs_PH <- st_read("Krishna/Krishna_PH.shp")
+shape_SHPs_new <- st_read("Krishna/Krishna_SHPs_new.shp")
 
 #shape_river <- st_read("Bhima/Bhima_river.shp")
 #shape_river <- st_read("Bhima/Bhima_river_v2.shp")
@@ -315,10 +316,9 @@ nrow(shape_dams)
 nrow(dams_snapped_joined)
 
 
-
-#st_write(dams_snapped, "Nethravathi/dams_snapped.shp",delete_layer = TRUE)
+#st_write(dams_snapped, "Krishna/dams_snapped_reduced.shp",delete_layer = TRUE)
 #st_write(shape_river_small, "Sita/shape_river_small.shp",delete_layer = TRUE)
-#st_write(dams_snapped_joined, "Haladi/dams_snapped_joined.shp",delete_layer = TRUE)
+#st_write(dams_snapped_joined, "Krishna/dams_snapped_joined.shp",delete_layer = TRUE)
 
 headwaters_checking <- headwaters_dam(dams_snapped_joined, shape_river_simple)
 head(headwaters_checking$flag_headwater)
