@@ -77,21 +77,22 @@ setwd("E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity/")
 
 
 #shape_river <- st_read("Tunga/Tunga_river.shp")
-#shape_river <- st_read("Tunga/Tunga_river_v2.shp")
-#shape_basin <- st_read("Tunga/Tunga_wshed.shp")
+shape_river <- st_read("Tunga/Tunga_river_v2.shp")
+shape_basin <- st_read("Tunga/Tunga_wshed.shp")
 #shape_SHPs <- st_read("Tunga/Tunga_SHPs.shp")
 #shape_Large_dams <- st_read("Tunga/Tunga_LargeDams.shp")
 #shape_SHPs_PH <- st_read("Tunga/Tunga_PH.shp")
+shape_SHPs_new <- st_read("Tunga/Tunga_SHPs_new.shp")
 
 #shape_river <- st_read("Krishna/Krishna_river.shp")
 #shape_river <- st_read("Krishna/Krishna_river_v2.shp")
-shape_river <- st_read("Krishna/Krishna_river_v3.shp")
+#shape_river <- st_read("Krishna/Krishna_river_v3.shp")
 #shape_basin <- st_read("Krishna/Krishna_wshed.shp")
-shape_basin <- st_read("Krishna/Krishna_wshed_v2.shp")
+#shape_basin <- st_read("Krishna/Krishna_wshed_v2.shp")
 #shape_SHPs <- st_read("Krishna/Krishna_SHPs.shp")
 #shape_Large_dams <- st_read("Krishna/Krishna_LargeDams.shp")
 #shape_SHPs_PH <- st_read("Krishna/Krishna_PH.shp")
-shape_SHPs_new <- st_read("Krishna/Krishna_SHPs_new.shp")
+#shape_SHPs_new <- st_read("Krishna/Krishna_SHPs_new.shp")
 
 #shape_river <- st_read("Bhima/Bhima_river.shp")
 #shape_river <- st_read("Bhima/Bhima_river_v2.shp")
@@ -307,6 +308,8 @@ ggplot() +
   ggspatial::annotation_north_arrow(location = "br")
 
  dams_snapped$id[(which(dams_snapped$id %in% dams_snapped_joined$id == FALSE))]
+ dams_snapped$Company[(which(dams_snapped$id %in% dams_snapped_joined$id == FALSE))]
+ dams_snapped$SL._No.[(which(dams_snapped$id %in% dams_snapped_joined$id == FALSE))]
  
 
 nrow(shape_SHPs)
