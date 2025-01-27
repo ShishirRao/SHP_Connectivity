@@ -30,11 +30,13 @@ setwd("E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity/")
 
 
 #shape_river <- st_read("Kaveri/Kaveri_river.shp")
-#shape_river <- st_read("Kaveri/Kaveri_river_v2.shp") #confluences removed
+shape_river <- st_read("Kaveri/Kaveri_river_v2.shp") #confluences removed
 #shape_basin <- st_read("Kaveri/Kaveri_sub_basin_Karnataka_wshed.shp")
+shape_basin <- st_read("Kaveri/Kaveri_wshed.shp")
 #shape_SHPs <- st_read("Kaveri/Kaveri_SHPs.shp")
 #shape_SHPs_PH <- st_read("Kaveri/Kaveri_PH.shp")
 #shape_Large_dams <- st_read("Kaveri/Kaveri_LargeDams.shp")
+shape_SHPs_new <- st_read("Kaveri/Kaveri_SHPs_new.shp")
 
 #shape_river <- st_read("Sharavathi/Sharavathi_river.shp") #confluences removed
 #shape_river <- st_read("Sharavathi/Sharavathi_river_v2.shp") #confluences removed
@@ -77,12 +79,12 @@ setwd("E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity/")
 
 
 #shape_river <- st_read("Tunga/Tunga_river.shp")
-shape_river <- st_read("Tunga/Tunga_river_v2.shp")
-shape_basin <- st_read("Tunga/Tunga_wshed.shp")
+#shape_river <- st_read("Tunga/Tunga_river_v2.shp")
+#shape_basin <- st_read("Tunga/Tunga_wshed.shp")
 #shape_SHPs <- st_read("Tunga/Tunga_SHPs.shp")
 #shape_Large_dams <- st_read("Tunga/Tunga_LargeDams.shp")
 #shape_SHPs_PH <- st_read("Tunga/Tunga_PH.shp")
-shape_SHPs_new <- st_read("Tunga/Tunga_SHPs_new.shp")
+#shape_SHPs_new <- st_read("Tunga/Tunga_SHPs_new.shp")
 
 #shape_river <- st_read("Krishna/Krishna_river.shp")
 #shape_river <- st_read("Krishna/Krishna_river_v2.shp")
