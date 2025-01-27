@@ -97,12 +97,12 @@ setwd("E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity/")
 #shape_SHPs_new <- st_read("Krishna/Krishna_SHPs_new.shp")
 
 #shape_river <- st_read("Bhima/Bhima_river.shp")
-shape_river <- st_read("Bhima/Bhima_river_v2.shp")
-shape_basin <- st_read("Bhima/Bhima_wshed.shp")
+#shape_river <- st_read("Bhima/Bhima_river_v2.shp")
+#shape_basin <- st_read("Bhima/Bhima_wshed.shp")
 #shape_SHPs <- st_read("Bhima/Bhima_SHPs.shp")
 #shape_Large_dams <- st_read("Bhima/Bhima_LargeDams.shp")
 #shape_SHPs_PH <- st_read("Bhima/Bhima_PH.shp")
-shape_SHPs_new <- st_read("Bhima/Bhima_SHPs_new.shp")
+#shape_SHPs_new <- st_read("Bhima/Bhima_SHPs_new.shp")
 
 #shape_river <- st_read("Kali/Kali_river.shp")
 #shape_river <- st_read("Kali/Kali_river_v2.shp")
@@ -116,7 +116,6 @@ shape_SHPs_new <- st_read("Bhima/Bhima_SHPs_new.shp")
 #shape_Large_dams <- st_read("Gangavali/Gangavali_LargeDams.shp")
 #shape_SHPs_new <- st_read("Gangavali/Gangavali_SHPs_new.shp")
 
-
 #shape_river <- st_read("Chakra/Chakra_river.shp")
 #shape_river <- st_read("Chakra/Chakra_river_v2.shp")
 #shape_basin <- st_read("Chakra/Chakra_wshed.shp")
@@ -127,7 +126,6 @@ shape_SHPs_new <- st_read("Bhima/Bhima_SHPs_new.shp")
 #shape_basin <- st_read("Kolluru/Kolluru_wshed.shp")
 #shape_SHPs_new <- st_read("Kolluru/Kolluru_SHPs_new.shp")
 
-
 #shape_river <- st_read("Sankadagundi/Sankadagundi_river.shp")
 #shape_basin <- st_read("Sankadagundi/Sankadagundi_wshed.shp")
 #shape_SHPs_new <- st_read("Sankadagundi/Sankadagundi_SHPs_new.shp")
@@ -135,7 +133,6 @@ shape_SHPs_new <- st_read("Bhima/Bhima_SHPs_new.shp")
 #shape_river <- st_read("Venkatapura/Venkatapura_river.shp")
 #shape_basin <- st_read("Venkatapura/Venkatapura_wshed.shp")
 #shape_SHPs_new <- st_read("Venkatapura/Venkatapura_SHPs_new.shp")
-
 
 #shape_river <- st_read("Gundbala/Gundabala_river.shp")
 #shape_basin <- st_read("Gundbala/Gundabala_wshed.shp")
@@ -146,10 +143,13 @@ shape_SHPs_new <- st_read("Bhima/Bhima_SHPs_new.shp")
 #shape_basin <- st_read("Aghanashini/Aghanashini_wshed.shp")
 #shape_SHPs_new <- st_read("Aghanashini/Aghanashini_SHPs_new.shp")
 
-
 #shape_river <- st_read("Hattikeri/Hattikeri_river.shp")
 #shape_basin <- st_read("Hattikeri/Hattikeri_wshed.shp")
 #shape_SHPs_new <- st_read("Hattikeri/Hattikeri_SHPs_new.shp")
+
+shape_river <- st_read("Chandragiripuzha/Chandragiripuzha_river.shp")
+shape_basin <- st_read("Chandragiripuzha/Chandragiripuzha_wshed.shp")
+shape_SHPs_new <- st_read("Chandragiripuzha/Chandragiripuzha_SHPs_new.shp")
 
 
 
