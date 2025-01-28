@@ -19,28 +19,34 @@ library("shp2graph")
 library(ggrepel)
 library(rlist)
 
+setwd("E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity/ShapeFiles/")
+
 
 # for each basin, extract the basin name, and pass river, dam and wshed shape file to index calculation function
 collate <- function(basin_vars){
   
-  #basin_vars = g[9][[1]]
+  #basin_vars = g[23][[1]]
   basin_name <- sub("(.+?)(\\_.*)", "\\1", basin_vars[1])
   
   # parse through file names to detect river, wshed and dam files
   river_file = basin_vars[which(as.numeric(grepl('river', basin_vars)) == 1)]
   wshed_file = basin_vars[which(as.numeric(grepl('wshed', basin_vars)) == 1)]
-  SHP_file = basin_vars[which(as.numeric(grepl('SHPs', basin_vars)) == 1)]
+  SHP_file = basin_vars[which(as.numeric(grepl('SHPs', basin_vars)) == 1)][1]
+  if(grepl('new', SHP_file)){ #implies only new SHPs are present
+    SHP_file = character(0)
+  }
   SHP_PH_file = basin_vars[which(as.numeric(grepl('PH', basin_vars)) == 1)]
   LargeDams_file = basin_vars[which(as.numeric(grepl('LargeDams', basin_vars)) == 1)]
+  SHP_new_file = basin_vars[which(as.numeric(grepl('new', basin_vars)) == 1)]
   
   #data.frame(name = c("A1","A2"), index = c(as.numeric(1),as.numeric(2)),type = c("SHPs","LargeDams"))
   
   #if dam files are missing, then return here itself
-  if (rlang::is_empty(SHP_file) & rlang::is_empty(LargeDams_file)){
+  if (rlang::is_empty(SHP_file) & rlang::is_empty(LargeDams_file) & rlang::is_empty(SHP_new_file)){
     print(paste(basin_name,"no dams found"))
     return(data.frame(name = c(basin_name,basin_name,basin_name),
-                      index = c(as.numeric(1),as.numeric(1),as.numeric(1)),
-                      type = c("SHPs","LargeDams","Dewater")))  
+                      index = c(as.numeric(1),as.numeric(1),as.numeric(1),as.numeric(1)),
+                      type = c("SHPs","LargeDams","Dewater","SHPs_new")))  
   }
   
   # read shape files
@@ -48,7 +54,7 @@ collate <- function(basin_vars){
   shape_basin <- st_read(wshed_file)
   
   #clear the results variable
-  res1 = res2 = res3 =  NULL
+  res1 = res2 = res3 = res4 = NULL
   
   if (!rlang::is_empty(SHP_file)){ # if SHP shape file is not empty, then read it
     shape_SHPs <- st_read(SHP_file)
@@ -77,12 +83,25 @@ collate <- function(basin_vars){
     shape_Large_dams$Company = shape_Large_dams$Comments = "Large Hydro"
     res3 = index_calc_wrapper(basin_name,shape_river,shape_Large_dams,shape_basin,"Large")
     res3 = cbind(res3,type = "LargeDams")
-    print(res2)
+    print(res3)
   }
   
-  ?rbind
-  return(rbind(res1,res2,res3))
+  if (!rlang::is_empty(SHP_new_file)){ # if SHP shape file is not empty, then read it
+    shape_SHPs <- st_read(SHP_new_file)
+    # ignore irrigation canal SHPs
+    shape_SHPs = shape_SHPs[shape_SHPs$Sitatued.o == "river" | shape_SHPs$Sitatued.o == "part of bigger project",]
+    res4 = index_calc_wrapper(basin_name,shape_river,shape_SHPs,shape_basin,"new")
+    #res1 = data.frame(basin_name,index = 20)
+    res4 = cbind(res4,type = "SHPs_new")
+    print(res4)
+  }
+  
+  
+  return(rbind(res1,res2,res3,res4))
 }
+
+
+
 
 
 
@@ -307,7 +326,7 @@ index_calc_wrapper <- function(name, shape_river, shape_dams, shape_basin,type){
     #edges_split = split(edges %>% select(-Company),edges$Company,drop=FALSE)
     edges_split = split(edges,edges$Company,drop=FALSE)
     result = lapply(edges_split,DewateredNodes_TributaryFinder,edges = edges)
-    
+
     dewatered = unlist(lapply(result, `[[`, 1), use.names = F)
     dewatered = dewatered[!is.na(dewatered)]
     
@@ -319,8 +338,7 @@ index_calc_wrapper <- function(name, shape_river, shape_dams, shape_basin,type){
     
     free_trib = unlist(lapply(result, `[[`, 4), use.names = F)
     free_trib = free_trib[!is.na(free_trib)]
-    
-    
+
     index[[1]] <- index_calculation_dewater(graph = river_graph,
                                             weight = "length",
                                             c_ij_flag = TRUE,
@@ -344,16 +362,16 @@ filenames <- list.files(pattern="*.shp", full.names=FALSE)
 #This expression seperates the basin name from _wshed, _river, or _SHP of the file name
 g <- sub("(.+?)(\\_.*)", "\\1", filenames)
 g <- split(filenames, g)
-g
+g_df = as.data.frame(names(g))
+g_df
 
 
-g[9]
 
 
 listofres = NULL
 #call function to loop through each basin calculating DCI
-listofres = lapply(g,collate)
-#listofres = lapply(g[9],collate)
+#listofres = lapply(g,collate)
+listofres = lapply(g[5],collate)
 out.df <- (do.call("rbind", listofres))
 out.df <- out.df %>% `rownames<-`(seq_len(nrow(out.df)))
 names(out.df) <- c("Basin_name","DCIp","Type")

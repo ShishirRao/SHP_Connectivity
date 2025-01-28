@@ -66,11 +66,11 @@ setwd("E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity/")
 #shape_basin <- st_read("Sita/Sita_wshed.shp")
 #shape_SHPs_new <- st_read("Sita/Sita_SHPs_new.shp")
 
-#shape_river <- st_read("Gurupura/Gurupura_river.shp")
-#shape_river <- st_read("Gurupura/Gurupura_river_v2.shp")
-#shape_basin <- st_read("Gurupura/Gurupura_wshed.shp")
-#shape_SHPs <- st_read("Gurupura/Gurupura_SHPs.shp")
-#shape_SHPs_PH <- st_read("Gurupura/Gurupura_PH.shp")
+shape_river <- st_read("Gurupura/Gurupura_river.shp")
+shape_river <- st_read("Gurupura/Gurupura_river_v2.shp")
+shape_basin <- st_read("Gurupura/Gurupura_wshed.shp")
+shape_SHPs <- st_read("Gurupura/Gurupura_SHPs.shp")
+shape_SHPs_PH <- st_read("Gurupura/Gurupura_PH.shp")
 #shape_SHPs_new <- st_read("Gurupura/Gurupura_SHPs_new.shp")
 
 #shape_river <- st_read("Shambhavi/Shambhavi_river.shp")
@@ -151,15 +151,15 @@ setwd("E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity/")
 #shape_basin <- st_read("Chandragiripuzha/Chandragiripuzha_wshed.shp")
 #shape_SHPs_new <- st_read("Chandragiripuzha/Chandragiripuzha_SHPs_new.shp")
 
-shape_river <- st_read("South Pennar/SouthPennar_river.shp")
-shape_river <- st_read("South Pennar/SouthPennar_river_v2.shp")
-shape_basin <- st_read("South Pennar/SouthPennar_wshed.shp")
-shape_SHPs_new <- st_read("South Pennar/SouthPennar_SHPs_new.shp")
+#shape_river <- st_read("South Pennar/SouthPennar_river.shp")
+#shape_river <- st_read("South Pennar/SouthPennar_river_v2.shp")
+#shape_basin <- st_read("South Pennar/SouthPennar_wshed.shp")
+#shape_SHPs_new <- st_read("South Pennar/SouthPennar_SHPs_new.shp")
 
 
 
 # Load the proposed SHP locations to the SHP variable
-shape_SHPs = shape_SHPs_new[shape_SHPs_new$Checked == TRUE,]
+#shape_SHPs = shape_SHPs_new[shape_SHPs_new$Checked == TRUE,]
 
 # remove SHPs on irrigation canals, tank outlets and offshore SHPs and keep only stand-alone (river) and multipurpose SHPs
 shape_SHPs = shape_SHPs[shape_SHPs$Sitatued.o == "river" | shape_SHPs$Sitatued.o == "part of bigger project",]
