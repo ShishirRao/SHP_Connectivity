@@ -366,12 +366,10 @@ g_df = as.data.frame(names(g))
 g_df
 
 
-
-
 listofres = NULL
 #call function to loop through each basin calculating DCI
 #listofres = lapply(g,collate)
-listofres = lapply(g[12],collate)
+listofres = lapply(g[28],collate)
 out.df <- (do.call("rbind", listofres))
 out.df <- out.df %>% `rownames<-`(seq_len(nrow(out.df)))
 names(out.df) <- c("Basin_name","DCIp","Type")
