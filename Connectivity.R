@@ -147,9 +147,14 @@ setwd("E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity/")
 #shape_basin <- st_read("Hattikeri/Hattikeri_wshed.shp")
 #shape_SHPs_new <- st_read("Hattikeri/Hattikeri_SHPs_new.shp")
 
-shape_river <- st_read("Chandragiripuzha/Chandragiripuzha_river.shp")
-shape_basin <- st_read("Chandragiripuzha/Chandragiripuzha_wshed.shp")
-shape_SHPs_new <- st_read("Chandragiripuzha/Chandragiripuzha_SHPs_new.shp")
+#shape_river <- st_read("Chandragiripuzha/Chandragiripuzha_river.shp")
+#shape_basin <- st_read("Chandragiripuzha/Chandragiripuzha_wshed.shp")
+#shape_SHPs_new <- st_read("Chandragiripuzha/Chandragiripuzha_SHPs_new.shp")
+
+shape_river <- st_read("South Pennar/SouthPennar_river.shp")
+shape_river <- st_read("South Pennar/SouthPennar_river_v2.shp")
+shape_basin <- st_read("South Pennar/SouthPennar_wshed.shp")
+shape_SHPs_new <- st_read("South Pennar/SouthPennar_SHPs_new.shp")
 
 
 
