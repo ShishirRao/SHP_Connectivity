@@ -45,8 +45,8 @@ collate <- function(basin_vars){
   if (rlang::is_empty(SHP_file) & rlang::is_empty(LargeDams_file) & rlang::is_empty(SHP_new_file)){
     print(paste(basin_name,"no dams found"))
     return(data.frame(name = c(basin_name,basin_name,basin_name),
-                      index = c(as.numeric(1),as.numeric(1),as.numeric(1),as.numeric(1)),
-                      type = c("SHPs","LargeDams","Dewater","SHPs_new")))  
+                      index = c(as.numeric(1),as.numeric(1),as.numeric(1),as.numeric(1),as.numeric(1),as.numeric(1)),
+                      type = c("SHPs","LargeDams","Dewater","Existing_total","SHPs_new","Existing_Proposed_total")))  
   }
   
   # read shape files
@@ -95,20 +95,25 @@ collate <- function(basin_vars){
     print(res4)
   }
   
-  
-  
   if (!rlang::is_empty(SHP_new_file)){ # if SHP shape file is not empty, then read it
-    shape_SHPs <- st_read(SHP_new_file)
+    shape_SHPs_new <- st_read(SHP_new_file)
     # ignore irrigation canal SHPs
-    shape_SHPs = shape_SHPs[shape_SHPs$Sitatued.o == "river" | shape_SHPs$Sitatued.o == "part of bigger project",]
-    res5 = index_calc_wrapper(basin_name,shape_river,shape_SHPs,shape_basin,"new")
+    shape_SHPs_new = shape_SHPs_new[shape_SHPs_new$Sitatued.o == "river" | shape_SHPs_new$Sitatued.o == "part of bigger project",]
+    res5 = index_calc_wrapper(basin_name,shape_river,shape_SHPs_new,shape_basin,"new")
     #res1 = data.frame(basin_name,index = 20)
     res5 = cbind(res5,type = "SHPs_new")
     print(res5)
   }
   
+  if(!is.null(res4) & !is.null(res5)){
+    shape_Large_SHP_PH$Allotted.C = as.numeric(shape_Large_SHP_PH$Allotted.C)
+    shape_Ins_Prop = bind_rows(list(shape_Large_SHP_PH,shape_SHPs_new))
+    res6 = index_calc_wrapper(basin_name,shape_river,shape_Ins_Prop,shape_basin,"Existing_Proposed_total")
+    res6 = cbind(res6,type = "Existing_Proposed_total")
+    print(res6)
+  }
   
-  return(rbind(res1,res2,res3,res4,res5))
+  return(rbind(res1,res2,res3,res4,res5,res6))
 }
 
 
