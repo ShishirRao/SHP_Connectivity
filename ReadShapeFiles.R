@@ -25,7 +25,7 @@ setwd("E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity/ShapeFiles/")
 # for each basin, extract the basin name, and pass river, dam and wshed shape file to index calculation function
 collate <- function(basin_vars){
   
-  #basin_vars = g[23][[1]]
+  #basin_vars = g[10][[1]]
   basin_name <- sub("(.+?)(\\_.*)", "\\1", basin_vars[1])
   
   # parse through file names to detect river, wshed and dam files
@@ -80,24 +80,35 @@ collate <- function(basin_vars){
     shape_Large_dams <- st_read(LargeDams_file)
     #send river, wshed and dame file names to be read and for calculating index
     shape_Large_dams$Sitatued.o = "river_non_SHP"
-    shape_Large_dams$Company = shape_Large_dams$Comments = "Large Hydro"
+    for(i in 1:nrow(shape_Large_dams)){
+      shape_Large_dams$Company[i] = shape_Large_dams$Comments[i] = paste0("Large Hydro_",i)
+    }
     res3 = index_calc_wrapper(basin_name,shape_river,shape_Large_dams,shape_basin,"Large")
     res3 = cbind(res3,type = "LargeDams")
     print(res3)
   }
   
-  if (!rlang::is_empty(SHP_new_file)){ # if SHP shape file is not empty, then read it
-    shape_SHPs <- st_read(SHP_new_file)
-    # ignore irrigation canal SHPs
-    shape_SHPs = shape_SHPs[shape_SHPs$Sitatued.o == "river" | shape_SHPs$Sitatued.o == "part of bigger project",]
-    res4 = index_calc_wrapper(basin_name,shape_river,shape_SHPs,shape_basin,"new")
-    #res1 = data.frame(basin_name,index = 20)
-    res4 = cbind(res4,type = "SHPs_new")
+  if(!is.null(res1) & !is.null(res2) & !is.null(res3)){
+    shape_Large_SHP_PH = bind_rows(list(shape_Large_dams,shape_SHPs,shape_SHPs_PH))
+    res4 = index_calc_wrapper(basin_name,shape_river,shape_Large_SHP_PH,shape_basin,"Existing_total")
+    res4 = cbind(res4,type = "Existing_total")
     print(res4)
   }
   
   
-  return(rbind(res1,res2,res3,res4))
+  
+  if (!rlang::is_empty(SHP_new_file)){ # if SHP shape file is not empty, then read it
+    shape_SHPs <- st_read(SHP_new_file)
+    # ignore irrigation canal SHPs
+    shape_SHPs = shape_SHPs[shape_SHPs$Sitatued.o == "river" | shape_SHPs$Sitatued.o == "part of bigger project",]
+    res5 = index_calc_wrapper(basin_name,shape_river,shape_SHPs,shape_basin,"new")
+    #res1 = data.frame(basin_name,index = 20)
+    res5 = cbind(res5,type = "SHPs_new")
+    print(res5)
+  }
+  
+  
+  return(rbind(res1,res2,res3,res4,res5))
 }
 
 
@@ -318,7 +329,7 @@ index_calc_wrapper <- function(name, shape_river, shape_dams, shape_basin,type){
                                   index_type = "full",
                                   index_mode = "from")
   
-  if(type == "Dewater"){
+  if(type == "Dewater" | type == "Existing_total"){
     edges = get.data.frame(river_graph, what = "edges")
     vertices = get.data.frame(river_graph, what = "vertices")
     
@@ -365,11 +376,12 @@ g <- split(filenames, g)
 g_df = as.data.frame(names(g))
 g_df
 
+g[10]
 
 listofres = NULL
 #call function to loop through each basin calculating DCI
 #listofres = lapply(g,collate)
-listofres = lapply(g[28],collate)
+listofres = lapply(g[10],collate)
 out.df <- (do.call("rbind", listofres))
 out.df <- out.df %>% `rownames<-`(seq_len(nrow(out.df)))
 names(out.df) <- c("Basin_name","DCIp","Type")
