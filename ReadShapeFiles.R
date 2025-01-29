@@ -25,14 +25,17 @@ setwd("E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity/ShapeFiles/")
 # for each basin, extract the basin name, and pass river, dam and wshed shape file to index calculation function
 collate <- function(basin_vars){
   
-  #basin_vars = g[10][[1]]
+  #basin_vars = g[5][[1]]
   basin_name <- sub("(.+?)(\\_.*)", "\\1", basin_vars[1])
+  print(basin_name)
   
   # parse through file names to detect river, wshed and dam files
   river_file = basin_vars[which(as.numeric(grepl('river', basin_vars)) == 1)]
   wshed_file = basin_vars[which(as.numeric(grepl('wshed', basin_vars)) == 1)]
-  SHP_file = basin_vars[which(as.numeric(grepl('SHPs', basin_vars)) == 1)][1]
-  if(grepl('new', SHP_file)){ #implies only new SHPs are present
+  SHP_file = basin_vars[which(as.numeric(grepl('SHPs', basin_vars)) == 1)]
+  if (length(SHP_file) == 2){ # implies both existing and new SHPs are present
+    SHP_file = SHP_file[1]  # load only existing SHPs
+  } else if (length(SHP_file) == 1 & grepl('new', SHP_file)){
     SHP_file = character(0)
   }
   SHP_PH_file = basin_vars[which(as.numeric(grepl('PH', basin_vars)) == 1)]
@@ -54,7 +57,7 @@ collate <- function(basin_vars){
   shape_basin <- st_read(wshed_file)
   
   #clear the results variable
-  res1 = res2 = res3 = res4 = NULL
+  res1 = res2 = res3 = res4 = res5 = res6 = NULL
   
   if (!rlang::is_empty(SHP_file)){ # if SHP shape file is not empty, then read it
     shape_SHPs <- st_read(SHP_file)
@@ -93,6 +96,12 @@ collate <- function(basin_vars){
     res4 = index_calc_wrapper(basin_name,shape_river,shape_Large_SHP_PH,shape_basin,"Existing_total")
     res4 = cbind(res4,type = "Existing_total")
     print(res4)
+  } else if(!is.null(res2) & is.null(res3)){
+    res4 = res2[,-3] # if large dams are missing but SHPs are present then existing total = dewatered
+    res4 = cbind(res4,type = "Existing_total")
+  } else if(is.null(res2) & !is.null(res3)){
+    res4 = res3[,-3] # if SHPs are missing but large dams exist then existing total = large dams
+    res4 = cbind(res4,type = "Existing_total")
   }
   
   if (!rlang::is_empty(SHP_new_file)){ # if SHP shape file is not empty, then read it
@@ -111,6 +120,12 @@ collate <- function(basin_vars){
     res6 = index_calc_wrapper(basin_name,shape_river,shape_Ins_Prop,shape_basin,"Existing_Proposed_total")
     res6 = cbind(res6,type = "Existing_Proposed_total")
     print(res6)
+  } else if (is.null(res4) & !is.null(res5)){ #existing total missing but new SHPs
+    res6 = res5[,-3]
+    res6 = cbind(res6,type = "Existing_Proposed_total")
+  } else if (!is.null(res4) & is.null(res5)){ # existing total but no new SHPs
+    res6 = res4[,-3]
+    res6 = cbind(res6,type = "Existing_Proposed_total")
   }
   
   return(rbind(res1,res2,res3,res4,res5,res6))
@@ -285,6 +300,7 @@ index_calc_wrapper <- function(name, shape_river, shape_dams, shape_basin,type){
   river_net_simplified <- river_net_simplified %>% 
     dplyr::select(NodeID, length, alt, DIST_DN_KM, UPLAND_SKM)
   
+  
   # use DIST_DN_KM to find the downstream most outlet 
   outlet <- river_net_simplified$NodeID[which(river_net_simplified$DIST_DN_KM == min(river_net_simplified$DIST_DN_KM))]
   
@@ -342,6 +358,9 @@ index_calc_wrapper <- function(name, shape_river, shape_dams, shape_basin,type){
     #edges_split = split(edges %>% select(-Company),edges$Company,drop=FALSE)
     edges_split = split(edges,edges$Company,drop=FALSE)
     result = lapply(edges_split,DewateredNodes_TributaryFinder,edges = edges)
+    
+    print("result")
+    print(result)
 
     dewatered = unlist(lapply(result, `[[`, 1), use.names = F)
     dewatered = dewatered[!is.na(dewatered)]
@@ -381,12 +400,12 @@ g <- split(filenames, g)
 g_df = as.data.frame(names(g))
 g_df
 
-g[10]
+g[1]
 
 listofres = NULL
 #call function to loop through each basin calculating DCI
 #listofres = lapply(g,collate)
-listofres = lapply(g[10],collate)
+#listofres = lapply(g[13],collate)
 out.df <- (do.call("rbind", listofres))
 out.df <- out.df %>% `rownames<-`(seq_len(nrow(out.df)))
 names(out.df) <- c("Basin_name","DCIp","Type")
@@ -396,16 +415,16 @@ out.df
 unique(out.df$Basin_name)
 
 out.df$Direction = "West"
-out.df$Direction[out.df$Basin_name == "Bhima" &
-                 out.df$Basin_name == "Kaveri" &
-                 out.df$Basin_name == "Krishna" &
-                 out.df$Basin_name == "Tunga" &
-                 out.df$Basin_name == "Palar" &
-                out.df$Basin_name == "NorthPennar" &
+out.df$Direction[out.df$Basin_name == "Bhima" |
+                 out.df$Basin_name == "Kaveri" |
+                 out.df$Basin_name == "Krishna" |
+                 out.df$Basin_name == "Tunga" |
+                 out.df$Basin_name == "Palar" |
+                out.df$Basin_name == "NorthPennar" |
                   out.df$Basin_name == "SouthPennar"] = "East"
 
 out.df.wide = spread(out.df, key = Type, value = DCIp)
-#write.csv(out.df.wide, "E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity/Basins/DCI_v3.csv")
+#write.csv(out.df.wide, "E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity/Basins/DCI_v4.csv")
 
 
 # prepare the output for display
@@ -417,8 +436,34 @@ wsheds <-bind_rows(wshed_shp_files)
 wsheds$Basin_name = basin_names
 
 wsheds = left_join(wsheds,out.df)
-#st_write(wsheds, "E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity/Basins/Results_DCI_v2.shp", delete_layer = TRUE)
-#write.csv(out.df, "E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity/Basins/DCI_v2.csv")
+st_write(wsheds, "E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity/Basins/Results_DCI_v4.shp", delete_layer = TRUE)
+#write.csv(out.df, "E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity/Basins/DCI_v5.csv")
+
+
+LargeDamNames = list.files(pattern="*LargeDams.shp", full.names=FALSE)
+LargeDams_shp_files <- lapply(LargeDamNames, read_sf)
+LargeDams <- bind_rows(LargeDams_shp_files)
+st_write(LargeDams, "E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity/Basins/LargeDams_shp_files.shp", delete_layer = TRUE)
+
+SHPNames = list.files(pattern="*SHPs.shp", full.names=FALSE)
+SHPNames_shp_files <- lapply(SHPNames, read_sf)
+SHPs <- bind_rows(SHPNames_shp_files)
+st_write(SHPs, "E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity/Basins/SHPs_shp_files.shp", delete_layer = TRUE)
+
+PHNames = list.files(pattern="*PH.shp", full.names=FALSE)
+PHNames_shp_files <- lapply(PHNames, read_sf)
+PHs <- bind_rows(PHNames_shp_files)
+st_write(PHs, "E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity/Basins/PHs_shp_files.shp", delete_layer = TRUE)
+
+Existing = bind_rows(cbind(LargeDams,type="Large"),cbind(SHPs,type="SHPs"),cbind(PHs,type="PHs"))
+st_write(Existing, "E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity/Basins/Existing_shp_files.shp", delete_layer = TRUE)
+
+SHP_new_Names = list.files(pattern="*new.shp", full.names=FALSE)
+SHP_new_Names_shp_files <- lapply(SHP_new_Names, read_sf)
+SHPs_new <- bind_rows(SHP_new_Names_shp_files)
+st_write(SHPs_new, "E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity/Basins/SHPs_new_shp_files.shp", delete_layer = TRUE)
+
+
 
 
 getwd()

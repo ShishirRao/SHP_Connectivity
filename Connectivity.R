@@ -30,12 +30,12 @@ setwd("E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity/")
 
 
 #shape_river <- st_read("Kaveri/Kaveri_river.shp")
-#shape_river <- st_read("Kaveri/Kaveri_river_v2.shp") #confluences removed
+shape_river <- st_read("Kaveri/Kaveri_river_v2.shp") #confluences removed
 #shape_basin <- st_read("Kaveri/Kaveri_sub_basin_Karnataka_wshed.shp")
-#shape_basin <- st_read("Kaveri/Kaveri_wshed.shp")
-#shape_SHPs <- st_read("Kaveri/Kaveri_SHPs.shp")
-#shape_SHPs_PH <- st_read("Kaveri/Kaveri_PH.shp")
-#shape_Large_dams <- st_read("Kaveri/Kaveri_LargeDams.shp")
+shape_basin <- st_read("Kaveri/Kaveri_wshed.shp")
+shape_SHPs <- st_read("Kaveri/Kaveri_SHPs.shp")
+shape_SHPs_PH <- st_read("Kaveri/Kaveri_PH.shp")
+shape_Large_dams <- st_read("Kaveri/Kaveri_LargeDams.shp")
 #shape_SHPs_new <- st_read("Kaveri/Kaveri_SHPs_new.shp")
 
 #shape_river <- st_read("Sharavathi/Sharavathi_river.shp") #confluences removed
@@ -66,11 +66,11 @@ setwd("E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity/")
 #shape_basin <- st_read("Sita/Sita_wshed.shp")
 #shape_SHPs_new <- st_read("Sita/Sita_SHPs_new.shp")
 
-shape_river <- st_read("Gurupura/Gurupura_river.shp")
-shape_river <- st_read("Gurupura/Gurupura_river_v2.shp")
-shape_basin <- st_read("Gurupura/Gurupura_wshed.shp")
-shape_SHPs <- st_read("Gurupura/Gurupura_SHPs.shp")
-shape_SHPs_PH <- st_read("Gurupura/Gurupura_PH.shp")
+#shape_river <- st_read("Gurupura/Gurupura_river.shp")
+#shape_river <- st_read("Gurupura/Gurupura_river_v2.shp")
+#shape_basin <- st_read("Gurupura/Gurupura_wshed.shp")
+#shape_SHPs <- st_read("Gurupura/Gurupura_SHPs.shp")
+#shape_SHPs_PH <- st_read("Gurupura/Gurupura_PH.shp")
 #shape_SHPs_new <- st_read("Gurupura/Gurupura_SHPs_new.shp")
 
 #shape_river <- st_read("Shambhavi/Shambhavi_river.shp")
@@ -88,12 +88,12 @@ shape_SHPs_PH <- st_read("Gurupura/Gurupura_PH.shp")
 
 #shape_river <- st_read("Krishna/Krishna_river.shp")
 #shape_river <- st_read("Krishna/Krishna_river_v2.shp")
-shape_river <- st_read("Krishna/Krishna_river_v3.shp")
+#shape_river <- st_read("Krishna/Krishna_river_v3.shp")
 #shape_basin <- st_read("Krishna/Krishna_wshed.shp")
-shape_basin <- st_read("Krishna/Krishna_wshed_v2.shp")
-shape_SHPs <- st_read("Krishna/Krishna_SHPs.shp")
+#shape_basin <- st_read("Krishna/Krishna_wshed_v2.shp")
+#shape_SHPs <- st_read("Krishna/Krishna_SHPs.shp")
 #shape_Large_dams <- st_read("Krishna/Krishna_LargeDams.shp")
-shape_SHPs_PH <- st_read("Krishna/Krishna_PH.shp")
+#shape_SHPs_PH <- st_read("Krishna/Krishna_PH.shp")
 #shape_SHPs_new <- st_read("Krishna/Krishna_SHPs_new.shp")
 
 #shape_river <- st_read("Bhima/Bhima_river.shp")
@@ -488,7 +488,7 @@ NetworkGenerate <- function(dams_snapped_joined,shape_river_simple,type){
     ggspatial::annotation_scale(location = "bl", style = "ticks")
   
   #st_write(network_links, "Nethravathi/network_links.shp")
-  #st_write(river_net_simplified, "Sita/river_net_simplified.shp",delete_layer = TRUE)
+  #st_write(river_net_simplified, "Kaveri/river_net_simplified.shp",delete_layer = TRUE)
 
   # this won't work because not all rivers drain to the sea. Some are sub-basins
   #outlet <- river_net_simplified$NodeID[river_net_simplified$DIST_DN_KM == 0 ] 

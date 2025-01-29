@@ -601,8 +601,10 @@ index_calculation_dewater = function (graph, weight = "length", nodes_id = "name
         free_trib_attr = st_join(river_net_simplified[river_net_simplified$NodeID == free_trib_nodes[i],], shape_river, join = st_equals_exact, par = 0.001 )
         free_trib_wshed = free_trib_attr$UPLAND_SKM.y
         
+        print("free_trib_nodes")
+        print(free_trib_nodes[i])
         print("free_trib_attr")
-        print(free_trib_attr)
+        print(free_trib_attr[i])
         
         # in case the free flowing trib is dammed, st_join with st_equals_exact won't work because the free-trib has nodes on it and so, that segment
         # won't coincide with the hydrosheds segment. st_join returns NA for upland skm. To resolve this, use st_within for this case
