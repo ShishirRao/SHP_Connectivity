@@ -521,10 +521,63 @@ wsheds <-bind_rows(wshed_shp_files)
 wsheds$Basin_name = basin_names
 
 
+#' @param dsn Path to one shapefile with multiple polygons or a list of files
+#' @param id \code{character} Character specifying the id column
+#' @param touches \code{logical} If TRUE, all cells touched by lines or polygons are affected, 
+#' not just those on the line render path, or whose center point is within the polygon. 
+#' @param resolution \code{integer} Resolution in degrees
+#' @param save \code{logical} Should individual output be stored. Path to output folder can be specified under path 
+#' @param extent \code{extent} Extent of area that we are interested in.
+#' @param split \code{character} default is NA
+#' @param name_split \code{integer} Specifies which splits to use, default is c(1,2).
+#' @param seasonal \code{integer} 1 = Resident, 2 = Breeding Season, 3 = Non-breeding Season, 4 = Passage, 5 =	Seasonal occurence uncertain.
+#' @param origin \code{integer} 1 = Native, 2 =	Reintroduced, 3 =	Introduced, 4 =	Vagrant, 5 = Origin Uncertain.
+#' @param presence \code{integer} 1 =	Extant, 2 = Probably Extant, 3 = Possibly Extant, 4 = Possibly Extinct, 5 = Extinct (post 1500), 6 = Presence Uncertain.
+#' @param getCover \code{logical} Calculate the percentage covered by a polygon rather than the presence of a species
+#' @param df \code{logical} Store the output as data.frame or not. If df=FALSE output will be stored as .tif files.
+#' @param crs \code{character} Define the output projection of your data.
+#' @param path \code{character} Path where individual output files are going to be stored.
+#' @return list of raster layers for each \code{id} with the given area \code{shapefile}
+#' @examples
 
-Fish_rich = read.csv("E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity/Fish_rich_summary.csv",header=T)
-names(Fish_rich) = c("Slno","Basin_name","Fish_sp_rich")
-Fish_rich_wsheds = left_join(wsheds,Fish_rich)
-range(Fish_rich_wsheds$Fish_sp_rich)
 
-st_write(Fish_rich_wsheds, "E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity/Basins/Fish_rich_wsheds.shp", delete_layer = TRUE)
+# download the IUCN fish ranges that overlap with the study basins
+Fish_rich = st_read("E:/Shishir/Thesis_GIS/FW_FISH/FW_FISH_DCI_intersect.shp")
+names(Fish_rich)
+Fish_rich = as.data.frame(Fish_rich %>% dplyr::select("Basn_nm","id_no","sci_name",
+                                                      "presence","origin","seasonal",
+                                                      "compiler","subspecies",
+                                                      "marine","freshwater","category"))
+
+unique(Fish_rich$category)
+
+Fish_rich$estuarine = ifelse(Fish_rich$marine == "true" & Fish_rich$freshwater == "true","true","false")
+
+Fish_rich_count = Fish_rich %>% dplyr::group_by(Basn_nm) %>% summarise(total_rich=n())
+Fish_rich_freshwater = Fish_rich %>% dplyr::group_by(Basn_nm) %>% filter(freshwater == "true" & marine == "false") %>% summarise(fw_rich=n())
+Fish_rich_estuarine = Fish_rich %>% dplyr::group_by(Basn_nm) %>% filter(estuarine == "true") %>% summarise(est_rich=n())    
+Fish_IUCN_CR = Fish_rich %>% dplyr::group_by(Basn_nm)  %>% filter(category == "CR") %>% summarise(CR=n())
+Fish_IUCN_VU = Fish_rich %>% dplyr::group_by(Basn_nm) %>% filter(category == "VU") %>% summarise(VR=n())
+Fish_IUCN_EN = Fish_rich %>% dplyr::group_by(Basn_nm) %>% filter(category == "EN") %>% summarise(EN=n())    
+
+
+
+Fish_rich_summary = left_join(Fish_rich_count,Fish_rich_freshwater)
+Fish_rich_summary = left_join(Fish_rich_summary,Fish_rich_estuarine)
+Fish_rich_summary = left_join(Fish_rich_summary,Fish_IUCN_CR)
+Fish_rich_summary = left_join(Fish_rich_summary,Fish_IUCN_VU)
+Fish_rich_summary = left_join(Fish_rich_summary,Fish_IUCN_EN)
+
+names(Fish_rich_summary) 
+#write.csv(Fish_rich_summary,"Fish_rich_summary.csv")
+
+getwd()
+
+
+
+
+#Fish_rich = read.csv("E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity/Fish_rich_summary.csv",header=T)
+names(Fish_rich_summary)[1] = "Basin_name"
+Fish_rich_wsheds = left_join(wsheds,Fish_rich_summary)
+
+#st_write(Fish_rich_wsheds, "E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity/Basins/Fish_rich_wsheds_v2.shp", delete_layer = TRUE)

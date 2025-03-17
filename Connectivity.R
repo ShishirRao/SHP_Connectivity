@@ -20,22 +20,24 @@ library(ggrepel)
 
 setwd("E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity/")
 
+shape_river = shape_basin = shape_SHPs = shape_SHPs_PH = shape_SHPs_new = shape_Large_dams = NULL
+
 
 #shape_river <- st_read("Nethravathi/Nethravathi_river.shp")
-#shape_river <- st_read("Nethravathi/Nethravathi_river_V2.shp")
-#shape_basin <- st_read("Nethravathi/Nethravathi_wshed.shp")
-#shape_SHPs <- st_read("Nethravathi/Nethravathi_SHPs.shp")
-#shape_SHPs_PH <- st_read("Nethravathi/Nethravathi_PH.shp")
-#shape_SHPs_new <- st_read("Nethravathi/Nethravathi_SHPs_new.shp")
+shape_river <- st_read("Nethravathi/Nethravathi_river_V2.shp")
+shape_basin <- st_read("Nethravathi/Nethravathi_wshed.shp")
+shape_SHPs <- st_read("Nethravathi/Nethravathi_SHPs.shp")
+shape_SHPs_PH <- st_read("Nethravathi/Nethravathi_PH.shp")
+shape_SHPs_new <- st_read("Nethravathi/Nethravathi_SHPs_new.shp")
 
 
 #shape_river <- st_read("Kaveri/Kaveri_river.shp")
-shape_river <- st_read("Kaveri/Kaveri_river_v2.shp") #confluences removed
+#shape_river <- st_read("Kaveri/Kaveri_river_v2.shp") #confluences removed
 #shape_basin <- st_read("Kaveri/Kaveri_sub_basin_Karnataka_wshed.shp")
-shape_basin <- st_read("Kaveri/Kaveri_wshed.shp")
-shape_SHPs <- st_read("Kaveri/Kaveri_SHPs.shp")
-shape_SHPs_PH <- st_read("Kaveri/Kaveri_PH.shp")
-shape_Large_dams <- st_read("Kaveri/Kaveri_LargeDams.shp")
+#shape_basin <- st_read("Kaveri/Kaveri_wshed.shp")
+#shape_SHPs <- st_read("Kaveri/Kaveri_SHPs.shp")
+#shape_SHPs_PH <- st_read("Kaveri/Kaveri_PH.shp")
+#shape_Large_dams <- st_read("Kaveri/Kaveri_LargeDams.shp")
 #shape_SHPs_new <- st_read("Kaveri/Kaveri_SHPs_new.shp")
 
 #shape_river <- st_read("Sharavathi/Sharavathi_river.shp") #confluences removed
@@ -174,10 +176,10 @@ shape_SHPs_PH = shape_SHPs_PH[shape_SHPs_PH$Sitatued.o == "river" | shape_SHPs_P
 shape_Large_dams$Sitatued.o = "river_non_SHP"
 
 
-#shape_dams = bind_rows(list(shape_SHPs, shape_Large_dams))
+shape_dams = bind_rows(list(shape_SHPs, shape_Large_dams))
 #shape_dams = bind_rows(list(shape_SHPs, shape_Large_dams,shape_SHPs_PH))
 #shape_dams = bind_rows(list(shape_SHPs, shape_SHPs_PH))
-shape_dams = shape_SHPs
+#shape_dams = shape_SHPs
 #shape_dams = shape_Large_dams
 
 nrow(shape_SHPs)
