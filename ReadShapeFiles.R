@@ -23,11 +23,13 @@ setwd("E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity/ShapeFiles/")
 
 
 # for each basin, extract the basin name, and pass river, dam and wshed shape file to index calculation function
-collate <- function(basin_vars){
+collate <- function(basin_vars, DCI_type){
   
   #basin_vars = g[1][[1]]
+  #basin_vars = g[17][[1]]
   basin_name <- sub("(.+?)(\\_.*)", "\\1", basin_vars[1])
   print(basin_name)
+  print(DCI_type)
   
   #initialize file name variables
   river_file = wshed_file = SHP_file = SHP_PH_file = LargeDams_file = SHP_new_file = character(0)
@@ -49,6 +51,8 @@ collate <- function(basin_vars){
     SHP_PH_file = basin_vars[which(as.numeric(grepl('PH', basin_vars)) == 1)]
   }
   
+
+  
   LargeDams_file = basin_vars[which(as.numeric(grepl('LargeDams', basin_vars)) == 1)]
   SHP_new_file = basin_vars[which(as.numeric(grepl('new', basin_vars)) == 1)]
   
@@ -60,6 +64,19 @@ collate <- function(basin_vars){
     return(data.frame(name = c(basin_name,basin_name,basin_name),
                       index = c(as.numeric(1),as.numeric(1),as.numeric(1),as.numeric(1),as.numeric(1),as.numeric(1)),
                       type = c("SHPs","LargeDams","Dewater","Existing_total","SHPs_new","Existing_Proposed_total")))  
+  }
+  
+  if (DCI_type == "DCId"){
+    #Calculate DCId only for west-flowing rivers.
+    if(basin_name == "Bhima" | basin_name == "Kaveri" |
+       basin_name == "Krishna" |basin_name == "Tunga" |
+       basin_name == "Palar" |basin_name == "NorthPennar" |
+       basin_name == "SouthPennar"){
+      
+      return(data.frame(name = c(basin_name,basin_name,basin_name),
+                        index = c(NA,NA,NA,NA,NA,NA),
+                        type = c("SHPs","LargeDams","Dewater","Existing_total","SHPs_new","Existing_Proposed_total")))  
+      }
   }
   
   # read shape files
@@ -75,7 +92,7 @@ collate <- function(basin_vars){
     shape_SHPs <- st_read(SHP_file)
     # ignore irrigation canal SHPs
     shape_SHPs = shape_SHPs[shape_SHPs$Sitatued.o == "river" | shape_SHPs$Sitatued.o == "part of bigger project",]
-    res1 = index_calc_wrapper(basin_name,shape_river,shape_SHPs,shape_basin,"SHP")
+    res1 = index_calc_wrapper(basin_name,shape_river,shape_SHPs,shape_basin,"SHP",DCI_type)
     #res1 = data.frame(basin_name,index = 20)
     res1 = cbind(res1,type = "SHPs")
     print(res1)
@@ -86,7 +103,7 @@ collate <- function(basin_vars){
     shape_SHPs_PH$Comments = "Powerhouse"
     shape_SHPs_PH = shape_SHPs_PH[shape_SHPs_PH$Sitatued.o == "river" | shape_SHPs_PH$Sitatued.o == "part of bigger project",]
     shape_SHPs_PH = bind_rows(list(shape_SHPs,shape_SHPs_PH))
-    res2 = index_calc_wrapper(basin_name,shape_river,shape_SHPs_PH,shape_basin,"Dewater")
+    res2 = index_calc_wrapper(basin_name,shape_river,shape_SHPs_PH,shape_basin,"Dewater",DCI_type)
     res2 = cbind(res2,type = "Dewater")
     print(res2)
   }
@@ -98,7 +115,7 @@ collate <- function(basin_vars){
     for(i in 1:nrow(shape_Large_dams)){
       shape_Large_dams$Company[i] = shape_Large_dams$Comments[i] = paste0("Large Hydro_",i)
     }
-    res3 = index_calc_wrapper(basin_name,shape_river,shape_Large_dams,shape_basin,"Large")
+    res3 = index_calc_wrapper(basin_name,shape_river,shape_Large_dams,shape_basin,"Large",DCI_type)
     res3 = cbind(res3,type = "LargeDams")
     print(res3)
   }
@@ -106,7 +123,7 @@ collate <- function(basin_vars){
   if(!is.null(res1) & !is.null(res2) & !is.null(res3)){
     shape_existing = bind_rows(list(shape_Large_dams,shape_SHPs,shape_SHPs_PH))
     shape_existing$Allotted.C = as.numeric(shape_existing$Allotted.C) # required for mering with new SHPs later
-    res4 = index_calc_wrapper(basin_name,shape_river,shape_existing,shape_basin,"Existing_total")
+    res4 = index_calc_wrapper(basin_name,shape_river,shape_existing,shape_basin,"Existing_total",DCI_type)
     res4 = cbind(res4,type = "Existing_total")
     print(res4)
   } else if(!is.null(res2) & is.null(res3)){
@@ -124,7 +141,7 @@ collate <- function(basin_vars){
     shape_SHPs_new <- st_read(SHP_new_file)
     # ignore irrigation canal SHPs
     shape_SHPs_new = shape_SHPs_new[shape_SHPs_new$Sitatued.o == "river" | shape_SHPs_new$Sitatued.o == "part of bigger project",]
-    res5 = index_calc_wrapper(basin_name,shape_river,shape_SHPs_new,shape_basin,"new")
+    res5 = index_calc_wrapper(basin_name,shape_river,shape_SHPs_new,shape_basin,"new",DCI_type)
     #res1 = data.frame(basin_name,index = 20)
     res5 = cbind(res5,type = "SHPs_new")
     print(res5)
@@ -133,7 +150,7 @@ collate <- function(basin_vars){
   if(!is.null(res4) & !is.null(res5)){
     #shape_existing$Allotted.C = as.numeric(shape_existing$Allotted.C)
     shape_Ins_Prop = bind_rows(list(shape_existing,shape_SHPs_new))
-    res6 = index_calc_wrapper(basin_name,shape_river,shape_Ins_Prop,shape_basin,"Existing_Proposed_total")
+    res6 = index_calc_wrapper(basin_name,shape_river,shape_Ins_Prop,shape_basin,"Existing_Proposed_total",DCI_type)
     res6 = cbind(res6,type = "Existing_Proposed_total")
     print(res6)
   } else if (is.null(res4) & !is.null(res5)){ #existing total missing but new SHPs
@@ -143,27 +160,24 @@ collate <- function(basin_vars){
     res6 = res4[,-3]
     res6 = cbind(res6,type = "Existing_Proposed_total")
   }
-  
   return(rbind(res1,res2,res3,res4,res5,res6))
 }
 
 
-
-
-
-
 # this function takes basin name, river_file, dam_file, wshed_file and type == SHP or large or dewatering
 # as inputs and returns network stats as a list
-index_calc_wrapper <- function(name, shape_river, shape_dams, shape_basin,type){  
+index_calc_wrapper <- function(name, shape_river, shape_dams, shape_basin,type,DCI_type){  
   
   #shape_dams = shape_Large_dams
   #shape_dams = shape_SHPs
   #shape_dams = shape_SHPs_PH
   #name = basin_name
   #type = "Dewater"
+  #DCI_type = DCId
   #pruned river network
   # Set a threshold of 10 square kilometers
   threshold = 10
+  
   
   # Prune HydroRIVERS network based on upstream area
   shape_river_small <- shape_river[as.numeric(shape_river$UPLAND_SKM) > threshold,]
@@ -256,21 +270,28 @@ index_calc_wrapper <- function(name, shape_river, shape_dams, shape_basin,type){
   nrow(shape_SHPs)+nrow(shape_Large_dams)
   nrow(dams_snapped_joined)
   
-    headwaters_checking <- headwaters_dam(dams_snapped_joined, shape_river_simple)
-    head(headwaters_checking$flag_headwater)
-    
+  headwaters_checking <- headwaters_dam(dams_snapped_joined, shape_river_simple)
+  head(headwaters_checking$flag_headwater)
+  
+  #If index type is diadromous, then the first dam from the sea in the upstream direction matters
+  if (DCI_type == "DCId"){
+      # Identify the dam at the lowest elevation. This is for DCId
+      Dam_loc = extract(dams_snapped_joined, geometry, into = c('Lon', 'Lat'), '\\((.*),(.*)\\)', conv = T)
+      Dam_loc = data.frame(x = Dam_loc$Lon, y = Dam_loc$Lat)
+      Dam_elevs = get_elev_point(locations =Dam_loc, units='meters', prj="EPSG:4326", src='aws')
+      dams_snapped_joined = dams_snapped_joined[which(Dam_elevs$elevation == min(Dam_elevs$elevation)),]
+  }
+
   # Create junction point shapefile
-    
-    # Create junction point shapefile
-    network_links <- rbind(
-      dams_snapped_joined %>% 
-        mutate(type = "dam", id_barrier = id_dam) %>%
-        dplyr::select(type, id_barrier, pass_u, pass_d,Company,Comments),
-      river_joins %>% mutate(type = "joint") %>%
-        dplyr::select(type) %>%
-        mutate(id_barrier = NA, pass_u = NA, pass_d = NA,Company = NA,Comments = NA) %>%
-        rename(geometry = x)) %>%
-      mutate(id_links = 1:nrow(.))
+  network_links <- rbind(
+    dams_snapped_joined %>% 
+      mutate(type = "dam", id_barrier = id_dam) %>%
+      dplyr::select(type, id_barrier, pass_u, pass_d,Company,Comments),
+    river_joins %>% mutate(type = "joint") %>%
+      dplyr::select(type) %>%
+      mutate(id_barrier = NA, pass_u = NA, pass_d = NA,Company = NA,Comments = NA) %>%
+      rename(geometry = x)) %>%
+    mutate(id_links = 1:nrow(.))
   
   # Split river network
   river_net_simplified <- lwgeom::st_split(shape_river_simple, network_links) %>%
@@ -404,7 +425,7 @@ index_calc_wrapper <- function(name, shape_river, shape_dams, shape_basin,type){
                                             river_net_simplified_ref = river_net_simplified)
   }
     
-  return(data.frame(name = name, DCIp = index[[1]][3]))
+  return(data.frame(name = name, DCI = index[[1]][3]))
 }
 
 #read shapefile, make a list of file names grouped basin-wise
@@ -418,17 +439,27 @@ g <- split(filenames, g)
 g_df = as.data.frame(names(g))
 g_df
 
-g[30]
 
 listofres = NULL
-#call function to loop through each basin calculating DCI
-listofres = lapply(g,collate)
+#call function to loop through each basin calculating DCIp
+listofres = lapply(g[1:12],collate,"DCIp")
 #listofres = lapply(g[1],collate)
 #Tunga = NULL
 #Tunga = lapply(g[30],collate)
 out.df <- (do.call("rbind", listofres))
 out.df <- out.df %>% `rownames<-`(seq_len(nrow(out.df)))
 names(out.df) <- c("Basin_name","DCIp","Type")
+
+
+listofres = NULL
+#call function to loop through each basin calculating DCId
+listofres = lapply(g,collate,"DCId")
+out.df <- (do.call("rbind", listofres))
+out.df <- out.df %>% `rownames<-`(seq_len(nrow(out.df)))
+names(out.df) <- c("Basin_name","DCId","Type")
+
+
+
 
 #Tunga = as.data.frame(Tunga)
 #names(Tunga) <- c("Basin_name","DCIp","Type","Direction")
@@ -444,11 +475,14 @@ out.df$Direction[out.df$Basin_name == "Bhima" |
                 out.df$Basin_name == "NorthPennar" |
                   out.df$Basin_name == "SouthPennar"] = "East"
 
-out.df.wide = spread(out.df, key = Type, value = DCIp)
+#out.df$DCId[out.df$Direction == "East"] = NA
 
-out.df.wide[is.na(out.df.wide)] <- 100
+out.df.wide = spread(out.df, key = Type, value = DCId)
+
+#out.df.wide[is.na(out.df.wide) & out.df$Direction == "West"] <- 100
 #Only for Sharavathi, dewater is NA
 out.df.wide$Dewater[out.df.wide$Basin_name == "Sharavathi"] <- NA
+
 
 range(out.df.wide$LargeDams)
 range(out.df.wide$SHPs)
@@ -457,7 +491,7 @@ range(out.df.wide$Existing_total)
 range(out.df.wide$SHPs_new)
 range(out.df.wide$Existing_Proposed_total)
 
-#write.csv(out.df.wide, "E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity/Basins/DCI_v6.csv")
+#write.csv(out.df.wide, "E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity/Basins/DCId_v2.csv")
 
 
 # prepare the output for display

@@ -176,16 +176,19 @@ shape_SHPs_PH = shape_SHPs_PH[shape_SHPs_PH$Sitatued.o == "river" | shape_SHPs_P
 shape_Large_dams$Sitatued.o = "river_non_SHP"
 
 
-shape_dams = bind_rows(list(shape_SHPs, shape_Large_dams))
+#shape_dams = bind_rows(list(shape_SHPs, shape_Large_dams))
 #shape_dams = bind_rows(list(shape_SHPs, shape_Large_dams,shape_SHPs_PH))
 #shape_dams = bind_rows(list(shape_SHPs, shape_SHPs_PH))
-#shape_dams = shape_SHPs
+shape_dams = shape_SHPs
 #shape_dams = shape_Large_dams
 
 nrow(shape_SHPs)
 nrow(shape_Large_dams)
 nrow(shape_SHPs_PH)
 nrow(shape_SHPs_new)
+
+names(shape_dams)
+
 #### shape files processing ####
 
 ggplot() +
@@ -220,6 +223,8 @@ ggplot() +
   ggspatial::annotation_scale(location = "bl", style = "ticks") +
   ggspatial::annotation_north_arrow(location = "br")+
   labs(caption = "Black dots are the position of the dams")
+
+
 
 
 #### Confluence processing ####
@@ -349,6 +354,15 @@ ggplot() +
 
 nrow(dams_snapped_joined[dams_snapped_joined$Sitatued.o == "river_non_SHP",]) # large dams
 nrow(dams_snapped_joined[dams_snapped_joined$Sitatued.o != "river_non_SHP",]) # SHPs
+
+
+# Identify the dam at the lowest elevation. This is for DCId
+Dam_loc = extract(dams_snapped_joined, geometry, into = c('Lon', 'Lat'), '\\((.*),(.*)\\)', conv = T)
+Dam_loc = data.frame(x = Dam_loc$Lon, y = Dam_loc$Lat)
+Dam_elevs = get_elev_point(locations =Dam_loc, units='meters', prj="EPSG:4326", src='aws')
+
+#dams_snapped_joined = dams_snapped_joined[which(Dam_elevs$elevation == min(Dam_elevs$elevation)),]
+
 
 #all the large dams
 DCI_Large = NetworkGenerate(dams_snapped_joined[dams_snapped_joined$Sitatued.o == "river_non_SHP",],shape_river_simple,"Large")
