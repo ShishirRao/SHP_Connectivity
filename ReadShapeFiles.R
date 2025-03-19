@@ -18,6 +18,7 @@ library("riverconn")
 library("shp2graph")
 library(ggrepel)
 library(rlist)
+library(directlabels)
 
 setwd("E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity/ShapeFiles/")
 
@@ -50,11 +51,23 @@ collate <- function(basin_vars, DCI_type){
   if(basin_name != "Sharavathi"){
     SHP_PH_file = basin_vars[which(as.numeric(grepl('PH', basin_vars)) == 1)]
   }
-  
-
-  
+    
   LargeDams_file = basin_vars[which(as.numeric(grepl('LargeDams', basin_vars)) == 1)]
   SHP_new_file = basin_vars[which(as.numeric(grepl('new', basin_vars)) == 1)]
+  
+  # If DCId is being calculated, do so only for the west-flowing rivers
+  if (DCI_type == "DCId"){
+    #Calculate DCId only for west-flowing rivers.
+    if(basin_name == "Bhima" | basin_name == "Kaveri" |
+       basin_name == "Krishna" |basin_name == "Tunga" |
+       basin_name == "Palar" |basin_name == "NorthPennar" |
+       basin_name == "SouthPennar"){
+      
+      return(data.frame(name = c(basin_name,basin_name,basin_name),
+                        index = c(NA,NA,NA,NA,NA,NA),
+                        type = c("SHPs","LargeDams","Dewater","Existing_total","SHPs_new","Existing_Proposed_total")))  
+    }
+  }
   
   #data.frame(name = c("A1","A2"), index = c(as.numeric(1),as.numeric(2)),type = c("SHPs","LargeDams"))
   
@@ -66,18 +79,7 @@ collate <- function(basin_vars, DCI_type){
                       type = c("SHPs","LargeDams","Dewater","Existing_total","SHPs_new","Existing_Proposed_total")))  
   }
   
-  if (DCI_type == "DCId"){
-    #Calculate DCId only for west-flowing rivers.
-    if(basin_name == "Bhima" | basin_name == "Kaveri" |
-       basin_name == "Krishna" |basin_name == "Tunga" |
-       basin_name == "Palar" |basin_name == "NorthPennar" |
-       basin_name == "SouthPennar"){
-      
-      return(data.frame(name = c(basin_name,basin_name,basin_name),
-                        index = c(NA,NA,NA,NA,NA,NA),
-                        type = c("SHPs","LargeDams","Dewater","Existing_total","SHPs_new","Existing_Proposed_total")))  
-      }
-  }
+
   
   # read shape files
   shape_river <- st_read(river_file) 
@@ -440,31 +442,34 @@ g_df = as.data.frame(names(g))
 g_df
 
 
-listofres = NULL
+# Potamodromous: within river connectivity
 #call function to loop through each basin calculating DCIp
-listofres = lapply(g[1:12],collate,"DCIp")
-#listofres = lapply(g[1],collate)
+listofres = NULL
+listofres = lapply(g,collate,"DCIp")
+#listofres = lapply(g[17],collate,"DCIp")
 #Tunga = NULL
-#Tunga = lapply(g[30],collate)
+#Tunga = lapply(g[30],collate,"DCIp")
 out.df <- (do.call("rbind", listofres))
 out.df <- out.df %>% `rownames<-`(seq_len(nrow(out.df)))
 names(out.df) <- c("Basin_name","DCIp","Type")
+out.df$DCIp = out.df$DCIp*100
+#save(out.df, file = "DCIp.Rdata")
+#Tunga = as.data.frame(Tunga)
+#names(Tunga) <- c("Basin_name","DCIp","Type","Direction")
+#out.df = rbind(out.df, Tunga)
 
 
+# Diadromous: river to sea connectivity
 listofres = NULL
 #call function to loop through each basin calculating DCId
 listofres = lapply(g,collate,"DCId")
 out.df <- (do.call("rbind", listofres))
 out.df <- out.df %>% `rownames<-`(seq_len(nrow(out.df)))
 names(out.df) <- c("Basin_name","DCId","Type")
+out.df$DCId = out.df$DCId*100
 
+#save(out.df, file = "DCId.Rdata")
 
-
-
-#Tunga = as.data.frame(Tunga)
-#names(Tunga) <- c("Basin_name","DCIp","Type","Direction")
-
-#out.df = rbind(out.df, Tunga)
 
 out.df$Direction = "West"
 out.df$Direction[out.df$Basin_name == "Bhima" |
@@ -477,9 +482,15 @@ out.df$Direction[out.df$Basin_name == "Bhima" |
 
 #out.df$DCId[out.df$Direction == "East"] = NA
 
-out.df.wide = spread(out.df, key = Type, value = DCId)
+out.df.wide = spread(out.df, key = Type, value = DCIp) #or DCId 
 
-#out.df.wide[is.na(out.df.wide) & out.df$Direction == "West"] <- 100
+#For DCIp
+#out.df.wide[is.na(out.df.wide)] <- 100
+
+#For DCIp
+out.df.wide[is.na(out.df.wide) & out.df.wide$Direction == "West"] <- 100
+
+
 #Only for Sharavathi, dewater is NA
 out.df.wide$Dewater[out.df.wide$Basin_name == "Sharavathi"] <- NA
 
@@ -491,8 +502,8 @@ range(out.df.wide$Existing_total)
 range(out.df.wide$SHPs_new)
 range(out.df.wide$Existing_Proposed_total)
 
-#write.csv(out.df.wide, "E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity/Basins/DCId_v2.csv")
-
+#write.csv(out.df.wide, "E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity/Basins/DCId_v4.csv")
+#write.csv(out.df.wide, "E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity/Basins/DCI_v7.csv")
 
 # prepare the output for display
 #read only the wsheds
@@ -502,48 +513,61 @@ basin_names <- sub("(.+?)(\\_.*)", "\\1", wshednames)
 wsheds <-bind_rows(wshed_shp_files)
 wsheds$Basin_name = basin_names
 
-class(wsheds)
-
-st_write(wsheds, "E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity/Basins/Basins.shp", delete_layer = TRUE)
+#This is just the basins under study
+#st_write(wsheds, "E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity/Basins/Basins.shp", delete_layer = TRUE)
 
 wsheds = left_join(wsheds,out.df.wide)
 #st_write(wsheds, "E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity/Basins/Results_DCI_v6.shp", delete_layer = TRUE)
-#write.csv(out.df, "E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity/Basins/DCI_v5.csv")
+#st_write(wsheds, "E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity/Basins/Results_DCId_v1.shp", delete_layer = TRUE)
+#write.csv(out.df, "E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity/Basins/DCI_v7.csv")
 
 
 LargeDamNames = list.files(pattern="*LargeDams.shp", full.names=FALSE)
 LargeDams_shp_files <- lapply(LargeDamNames, read_sf)
 LargeDams <- bind_rows(LargeDams_shp_files)
-st_write(LargeDams, "E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity/Basins/LargeDams_shp_files.shp", delete_layer = TRUE)
+#st_write(LargeDams, "E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity/Basins/LargeDams_shp_files.shp", delete_layer = TRUE)
 
 SHPNames = list.files(pattern="*SHPs.shp", full.names=FALSE)
 SHPNames_shp_files <- lapply(SHPNames, read_sf)
 SHPs <- bind_rows(SHPNames_shp_files)
-st_write(SHPs, "E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity/Basins/SHPs_shp_files.shp", delete_layer = TRUE)
+#st_write(SHPs, "E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity/Basins/SHPs_shp_files.shp", delete_layer = TRUE)
 
 PHNames = list.files(pattern="*PH.shp", full.names=FALSE)
 PHNames_shp_files <- lapply(PHNames, read_sf)
 PHs <- bind_rows(PHNames_shp_files)
-st_write(PHs, "E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity/Basins/PHs_shp_files.shp", delete_layer = TRUE)
+#st_write(PHs, "E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity/Basins/PHs_shp_files.shp", delete_layer = TRUE)
 
 Existing = bind_rows(cbind(LargeDams,type="Large"),cbind(SHPs,type="SHPs"),cbind(PHs,type="PHs"))
-st_write(Existing, "E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity/Basins/Existing_shp_files.shp", delete_layer = TRUE)
+#st_write(Existing, "E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity/Basins/Existing_shp_files.shp", delete_layer = TRUE)
 
 SHP_new_Names = list.files(pattern="*new.shp", full.names=FALSE)
 SHP_new_Names_shp_files <- lapply(SHP_new_Names, read_sf)
 SHPs_new <- bind_rows(SHP_new_Names_shp_files)
-st_write(SHPs_new, "E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity/Basins/SHPs_new_shp_files.shp", delete_layer = TRUE)
+#st_write(SHPs_new, "E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity/Basins/SHPs_new_shp_files.shp", delete_layer = TRUE)
 
 
+
+#### ggs ######
 # Plotting using ggplots
+out.df$Type = factor(out.df$Type, levels = c("LargeDams","SHPs","Dewater",
+                                             "Existing_total","SHPs_new",
+                                             "Existing_Proposed_total"))
+
 ggplot(out.df,aes(x=Type,y=DCIp))+geom_point(aes(color = Basin_name))+
-  geom_line(aes(group = Basin_name,color = Basin_name))
+  geom_line(aes(group = Basin_name,color = Basin_name))+facet_wrap(~Direction)+
+  geom_dl(aes(label = Basin_name),method = list(dl.combine("first.points","last.points")),cex = 2) +
+  theme(legend.position="none")
+
+?geom_dl
 
 ggplot(out.df,aes(x=Type,y=DCIp))+geom_point(aes(color = Basin_name))+
   geom_line(aes(group = Direction,color = Direction))
 
 
 +facet_wrap(.~Basin_name)
+
+
+
 
 
 
