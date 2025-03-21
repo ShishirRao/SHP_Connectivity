@@ -553,19 +553,22 @@ out.df$Type = factor(out.df$Type, levels = c("LargeDams","SHPs","Dewater",
                                              "Existing_total","SHPs_new",
                                              "Existing_Proposed_total"))
 
-ggplot(out.df,aes(x=Type,y=DCIp))+geom_point(aes(color = Basin_name))+
-  geom_line(aes(group = Basin_name,color = Basin_name))+facet_wrap(~Direction)+
-  geom_dl(aes(label = Basin_name),method = list(dl.combine("first.points","last.points")),cex = 2) +
+p = ggplot(out.df,aes(x=Type,y=DCIp))+geom_point(aes(color = Basin_name))+
+  geom_line(aes(group = Basin_name,color = Basin_name))+facet_wrap(~Direction)+ theme_bw()+
+  #geom_dl(aes(label = Basin_name),method = list(cex = 0.4, dl.combine("first.points","last.points"),vjust=2)) +
   theme(legend.position="none")
+
+direct.label(p,"angled.boxes")
+
+
+out.df[out.df$Basin_name == "Aghanashini",]
 
 ?geom_dl
 
 ggplot(out.df,aes(x=Type,y=DCIp))+geom_point(aes(color = Basin_name))+
   geom_line(aes(group = Direction,color = Direction))
 
-
 +facet_wrap(.~Basin_name)
-
 
 
 

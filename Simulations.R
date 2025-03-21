@@ -489,7 +489,8 @@ index_calculation_dewater = function (graph, weight = "length", nodes_id = "name
                                          pass_confluence = 1, pass_u = "pass_u", pass_d = "pass_d", 
                                          field_B = "length", dir_distance_type = "symmetric", disp_type = "exponential", 
                                          param_u, param_d, param, param_l,
-                                         dewatered_nodes,party_dewatered_nodes,dwnstream_party_dew_nodes,free_trib_nodes) 
+                                         dewatered_nodes,party_dewatered_nodes,dwnstream_party_dew_nodes,free_trib_nodes,
+                                         shape_river_ref,river_net_simplified_ref) 
 {
   print("inside index_calculation_dewater")
 
@@ -598,18 +599,18 @@ index_calculation_dewater = function (graph, weight = "length", nodes_id = "name
         # Lastly, change the Cij value for the party_dewatered based on the discharge contributation from free trib
         # we use area as a proxy for discharge
         # Since RiverConn alters the upland drainage area while slicing, use st_join to find the upland area from the original hydrosheds file
-        free_trib_attr = st_join(river_net_simplified[river_net_simplified$NodeID == free_trib_nodes[i],], shape_river, join = st_equals_exact, par = 0.001 )
+        free_trib_attr = st_join(river_net_simplified_ref[river_net_simplified_ref$NodeID == free_trib_nodes[i],], shape_river_ref, join = st_equals_exact, par = 0.01 )
         free_trib_wshed = free_trib_attr$UPLAND_SKM.y
         
         print("free_trib_nodes")
         print(free_trib_nodes[i])
         print("free_trib_attr")
-        print(free_trib_attr[i])
+        print(free_trib_attr)
         
         # in case the free flowing trib is dammed, st_join with st_equals_exact won't work because the free-trib has nodes on it and so, that segment
         # won't coincide with the hydrosheds segment. st_join returns NA for upland skm. To resolve this, use st_within for this case
         if (is.na(free_trib_attr$UPLAND_SKM.y)){
-          free_trib_attr = st_join(river_net_simplified[river_net_simplified$NodeID == free_trib_nodes[i],], shape_river, join = st_within, par = 0.001 )
+          free_trib_attr = st_join(river_net_simplified_ref[river_net_simplified_ref$NodeID == free_trib_nodes[i],], shape_river_ref, join = st_within, par = 0.001 )
           free_trib_wshed = free_trib_attr$UPLAND_SKM.y
         }
         
