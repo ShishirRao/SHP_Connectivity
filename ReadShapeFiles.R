@@ -27,7 +27,9 @@ setwd("E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity/ShapeFiles/")
 collate <- function(basin_vars, DCI_type){
   
   #basin_vars = g[1][[1]]
-  #basin_vars = g[17][[1]]
+  #basin_vars = g[24][[1]]
+  #DCI_type = "DCId"
+  
   basin_name <- sub("(.+?)(\\_.*)", "\\1", basin_vars[1])
   print(basin_name)
   print(DCI_type)
@@ -79,8 +81,6 @@ collate <- function(basin_vars, DCI_type){
                       type = c("SHPs","LargeDams","Dewater","Existing_total","SHPs_new","Existing_Proposed_total")))  
   }
   
-
-  
   # read shape files
   shape_river <- st_read(river_file) 
   shape_basin <- st_read(wshed_file)
@@ -122,18 +122,26 @@ collate <- function(basin_vars, DCI_type){
     print(res3)
   }
   
-  if(!is.null(res1) & !is.null(res2) & !is.null(res3)){
+  # 
+  #if(!is.null(res1) & !is.null(res2) & !is.null(res3)){
+  if(!is.null(res1) & !is.null(res3)){ # if both small dams and large dams are present
     shape_existing = bind_rows(list(shape_Large_dams,shape_SHPs,shape_SHPs_PH))
+    print("No of dams = ")
+    print(nrow(shape_existing))
     shape_existing$Allotted.C = as.numeric(shape_existing$Allotted.C) # required for mering with new SHPs later
     res4 = index_calc_wrapper(basin_name,shape_river,shape_existing,shape_basin,"Existing_total",DCI_type)
     res4 = cbind(res4,type = "Existing_total")
     print(res4)
-  } else if(!is.null(res2) & is.null(res3)){
+  } else if(!is.null(res1) & is.null(res3)){
     shape_existing = shape_SHPs_PH
     shape_existing$Allotted.C = as.numeric(shape_existing$Allotted.C) # required for mering with new SHPs later
-    res4 = res2[,-3] # if large dams are missing but SHPs are present then existing total = dewatered
+    if(basin_name != "Sharavathi"){
+      res4 = res2[,-3] # if SHPs are present but large dams are missing then existing total = dewatered
+    }else{
+      res4 = res1[,-3] # For Sharavathi, DCI for dewatering can't be calculated. so, existing total = SHPs
+    }
     res4 = cbind(res4,type = "Existing_total")
-  } else if(is.null(res2) & !is.null(res3)){
+  } else if(is.null(res1) & !is.null(res3)){
     shape_existing = shape_Large_dams
     res4 = res3[,-3] # if SHPs are missing but large dams exist then existing total = large dams
     res4 = cbind(res4,type = "Existing_total")
@@ -277,11 +285,17 @@ index_calc_wrapper <- function(name, shape_river, shape_dams, shape_basin,type,D
   
   #If index type is diadromous, then the first dam from the sea in the upstream direction matters
   if (DCI_type == "DCId"){
+      print("No of dams snapped joined = ")
+      print(nrow(dams_snapped_joined))
       # Identify the dam at the lowest elevation. This is for DCId
       Dam_loc = extract(dams_snapped_joined, geometry, into = c('Lon', 'Lat'), '\\((.*),(.*)\\)', conv = T)
       Dam_loc = data.frame(x = Dam_loc$Lon, y = Dam_loc$Lat)
       Dam_elevs = get_elev_point(locations =Dam_loc, units='meters', prj="EPSG:4326", src='aws')
+      print(Dam_elevs)
       dams_snapped_joined = dams_snapped_joined[which(Dam_elevs$elevation == min(Dam_elevs$elevation)),]
+      print("DCId")
+      print(type)
+      print(dams_snapped_joined)
   }
 
   # Create junction point shapefile
@@ -388,6 +402,7 @@ index_calc_wrapper <- function(name, shape_river, shape_dams, shape_basin,type,D
                                   B_ij_flag = FALSE,
                                   index_type = "full",
                                   index_mode = "from")
+  ?index_calculation
   
   if(type == "Dewater" | type == "Existing_total"){
     edges = get.data.frame(river_graph, what = "edges")
@@ -445,30 +460,35 @@ g_df
 # Potamodromous: within river connectivity
 #call function to loop through each basin calculating DCIp
 listofres = NULL
-listofres = lapply(g,collate,"DCIp")
-#listofres = lapply(g[17],collate,"DCIp")
+#listofres = lapply(g,collate,"DCIp")
+listofres = lapply(g[24],collate,"DCIp")
 #Tunga = NULL
 #Tunga = lapply(g[30],collate,"DCIp")
 out.df <- (do.call("rbind", listofres))
 out.df <- out.df %>% `rownames<-`(seq_len(nrow(out.df)))
 names(out.df) <- c("Basin_name","DCIp","Type")
 out.df$DCIp = out.df$DCIp*100
-#save(out.df, file = "DCIp.Rdata")
+#saveRDS(out.df, file = "DCIp.rds")
 #Tunga = as.data.frame(Tunga)
 #names(Tunga) <- c("Basin_name","DCIp","Type","Direction")
 #out.df = rbind(out.df, Tunga)
+
+#out.df = readRDS("DCIp.rds")
 
 
 # Diadromous: river to sea connectivity
 listofres = NULL
 #call function to loop through each basin calculating DCId
 listofres = lapply(g,collate,"DCId")
+listofres = lapply(g[24],collate,"DCId")
 out.df <- (do.call("rbind", listofres))
 out.df <- out.df %>% `rownames<-`(seq_len(nrow(out.df)))
 names(out.df) <- c("Basin_name","DCId","Type")
 out.df$DCId = out.df$DCId*100
 
 #save(out.df, file = "DCId.Rdata")
+
+#load("DCId.Rdata")
 
 
 out.df$Direction = "West"
@@ -483,6 +503,7 @@ out.df$Direction[out.df$Basin_name == "Bhima" |
 #out.df$DCId[out.df$Direction == "East"] = NA
 
 out.df.wide = spread(out.df, key = Type, value = DCIp) #or DCId 
+#out.df.wide = spread(out.df, key = Type, value = DCId) #or DCId 
 
 #For DCIp
 #out.df.wide[is.na(out.df.wide)] <- 100
@@ -503,6 +524,7 @@ range(out.df.wide$SHPs_new)
 range(out.df.wide$Existing_Proposed_total)
 
 #write.csv(out.df.wide, "E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity/Basins/DCId_v4.csv")
+#write.csv(out.df.wide, "E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity/Basins/DCId_v5.csv") #code changes for existing total
 #write.csv(out.df.wide, "E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity/Basins/DCI_v7.csv")
 
 # prepare the output for display
@@ -546,29 +568,198 @@ SHPs_new <- bind_rows(SHP_new_Names_shp_files)
 #st_write(SHPs_new, "E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity/Basins/SHPs_new_shp_files.shp", delete_layer = TRUE)
 
 
-
-#### ggs ######
+#### DCIp plot and summarries ####
 # Plotting using ggplots
+
+#out = gather(out.df.wide,Type,DCIp,Dewater:SHPs_new)
+#out.df = readRDS("DCIp.rds")
+#load("DCId.Rdata")
+
+
+out.df$Direction = "West"
+out.df$Direction[out.df$Basin_name == "Bhima" |
+                   out.df$Basin_name == "Kaveri" |
+                   out.df$Basin_name == "Krishna" |
+                   out.df$Basin_name == "Tunga" |
+                   out.df$Basin_name == "Palar" |
+                   out.df$Basin_name == "NorthPennar" |
+                   out.df$Basin_name == "SouthPennar"] = "East"
+
+#out$Type = as.factor(out$Type)
 out.df$Type = factor(out.df$Type, levels = c("LargeDams","SHPs","Dewater",
                                              "Existing_total","SHPs_new",
                                              "Existing_Proposed_total"))
 
-p = ggplot(out.df,aes(x=Type,y=DCIp))+geom_point(aes(color = Basin_name))+
-  geom_line(aes(group = Basin_name,color = Basin_name))+facet_wrap(~Direction)+ theme_bw()+
-  #geom_dl(aes(label = Basin_name),method = list(cex = 0.4, dl.combine("first.points","last.points"),vjust=2)) +
-  theme(legend.position="none")
+out.df$Direction = as.factor(out.df$Direction)
+out.df$Direction = factor(out.df$Direction, levels = c("West","East")) 
+levels(out.df$Direction) <- c("West-flowing", "East-flowing")
 
-direct.label(p,"angled.boxes")
+out.df$Basin_label = out.df$Basin_name
+out.df$Basin_label[out.df$Type == "SHPs" |
+                     out.df$Type == "Dewater" |
+                     out.df$Type == "Existing_total" | 
+                     out.df$Type == "SHPs_new" ] = NA
+
+No_Scenarios = out.df %>% group_by(Basin_name) %>% summarise(count = n())
+out.df = left_join(out.df,No_Scenarios)
+
+out.df$Basin_label[out.df$count == 2 & out.df$Type == "Existing_Proposed_total"] = 
+  out.df$Basin_name[out.df$count == 2 & out.df$Type == "Existing_Proposed_total"]
+#out.df$Basin_label[out.df$count == 2 & out.df$Type == "Existing_Proposed_total"] = NA
+
+out.df$Basin_label[out.df$count == 5 & out.df$Type == "SHPs"] = 
+  out.df$Basin_name[out.df$count == 5 & out.df$Type == "SHPs"]
+#out.df$Basin_label[out.df$count == 5 & out.df$Type == "Existing_Proposed_total"] = NA
 
 
-out.df[out.df$Basin_name == "Aghanashini",]
+DCIp = ggplot(out.df,aes(x=Type,y=DCIp))+
+geom_line(aes(group = Basin_name,color = Basin_name),size = 1.5)+
+geom_point(size = 2)+
+ scale_x_discrete(labels=c("LargeDams" = "1.Existing \nLarge dams", 
+                            "SHPs" = "2.Existing \nSHPs",
+                            "Dewater" = "3.Existing SHPs \n+ dewatering",
+                            "Existing_total" = "4.Existing \ndams",
+                            "SHPs_new" = "5.Proposed \nSHPs",
+                            "Existing_Proposed_total" = "6.Existing \n+ proposed \ndams"))+ 
+labs(x="Scenario")+facet_wrap(~Direction)+ guides(color="none")+  theme_bw() +
+geom_text_repel(aes(label = Basin_label), size = 3.5,max.overlaps = Inf) +
+theme(axis.text=element_text(size=10),
+             axis.title=element_text(size=10))
 
-?geom_dl
 
-ggplot(out.df,aes(x=Type,y=DCIp))+geom_point(aes(color = Basin_name))+
-  geom_line(aes(group = Direction,color = Direction))
 
-+facet_wrap(.~Basin_name)
+length(unique(out.df$Basin_name[out.df$Direction == "West-flowing"]))
+length(unique(out.df$Basin_name[out.df$Direction == "East-flowing"]))
+
+mean(out.df$DCIp[out.df$Direction == "East-flowing" & out.df$Type == "LargeDams"])
+
+(out.df$DCIp[out.df$Direction == "West-flowing" & out.df$Type == "LargeDams"])
+
+
+mean(out.df$DCIp[out.df$Direction == "West-flowing" & out.df$Type == "SHPs"])
+mean(out.df$DCIp[out.df$Direction == "East-flowing" & out.df$Type == "SHPs"])
+
+(out.df$DCIp[out.df$Direction == "East-flowing" & out.df$Type == "Existing_total"])
+
+
+# for existing dam scenario
+x = mean(out.df$DCIp[out.df$Direction == "East-flowing" & out.df$Type == "LargeDams" & out.df$DCIp < 100])
+y = mean(out.df$DCIp[out.df$Direction == "East-flowing" & out.df$Type == "Existing_total" & out.df$DCIp < 100])
+
+x = (out.df$DCIp[out.df$Basin_name == "Haladi" & out.df$Type == "LargeDams" & out.df$DCIp < 100])
+y = (out.df$DCIp[out.df$Basin_name == "Haladi" & out.df$Type == "Existing_total" & out.df$DCIp < 100])
+
+
+x = mean(out.df$DCIp[out.df$Direction == "West-flowing" & out.df$Type == "Existing_total" & out.df$DCIp < 100])
+y = mean(out.df$DCIp[out.df$Direction == "West-flowing" & out.df$Type == "SHPs_new" & out.df$DCIp < 100])
+
+
+(out.df$Basin_name[out.df$Direction == "West-flowing" & out.df$Type == "Existing_total" & out.df$DCIp < 100])
+
+x = mean(out.df$DCIp[(out.df$Basin_name == "Chakra" |
+                        out.df$Basin_name == "Gangavali" |
+                        out.df$Basin_name == "Gurupura" |
+                        out.df$Basin_name == "Haladi" |
+                        out.df$Basin_name == "Nethravathi" |
+                        out.df$Basin_name == "Sharavathi" |
+                        out.df$Basin_name == "Suvarna")
+                     & out.df$Type == "Existing_total" & out.df$DCIp < 100])
+
+y = mean(out.df$DCIp[(out.df$Basin_name == "Chakra" |
+                   out.df$Basin_name == "Gangavali" |
+                   out.df$Basin_name == "Gurupura" |
+                   out.df$Basin_name == "Haladi" |
+                   out.df$Basin_name == "Nethravathi" |
+                   out.df$Basin_name == "Sharavathi" |
+                   out.df$Basin_name == "Suvarna")
+                   & out.df$Type == "SHPs_new" & out.df$DCIp < 100])
+
+x
+y
+
+100*(y-x)/x
+.6*50
+
+mean(out.df$DCIp[out.df$Direction == "West-flowing" & out.df$Type == "SHPs_new" & out.df$count == 2])
+sd(out.df$DCIp[out.df$Direction == "West-flowing" & out.df$Type == "SHPs_new" & out.df$count == 2])
+
+x = mean(out.df$DCIp[out.df$Direction == "West-flowing" & out.df$Type == "Existing_total" & 
+                     out.df$DCIp < 100 & out.df$count > 2])
+
+y = mean(out.df$DCIp[out.df$Direction == "West-flowing" & out.df$Type == "Existing_Proposed_total" & 
+              out.df$DCIp < 100 & out.df$count > 2])
+
+x = mean(out.df$DCIp[out.df$Direction == "East-flowing" & out.df$Type == "Existing_total" & 
+                       out.df$DCIp < 100 & out.df$count > 2])
+
+y = mean(out.df$DCIp[out.df$Direction == "East-flowing" & out.df$Type == "Existing_Proposed_total" & 
+                       out.df$DCIp < 100 & out.df$count > 2])
+
+100*(y-x)/x
+
+
+
+#### DCId plot and summarries ####
+load("DCId.Rdata")
+
+
+out.df$Direction = "West"
+out.df$Direction[out.df$Basin_name == "Bhima" |
+                   out.df$Basin_name == "Kaveri" |
+                   out.df$Basin_name == "Krishna" |
+                   out.df$Basin_name == "Tunga" |
+                   out.df$Basin_name == "Palar" |
+                   out.df$Basin_name == "NorthPennar" |
+                   out.df$Basin_name == "SouthPennar"] = "East"
+
+#out$Type = as.factor(out$Type)
+out.df$Type = factor(out.df$Type, levels = c("LargeDams","SHPs","Dewater",
+                                             "Existing_total","SHPs_new",
+                                             "Existing_Proposed_total"))
+
+out.df$Direction = as.factor(out.df$Direction)
+out.df$Direction = factor(out.df$Direction, levels = c("West","East")) 
+levels(out.df$Direction) <- c("West-flowing", "East-flowing")
+
+out.df$Basin_label = out.df$Basin_name
+out.df$Basin_label[out.df$Type == "SHPs" |
+                     out.df$Type == "Dewater" |
+                     out.df$Type == "Existing_total" | 
+                     out.df$Type == "SHPs_new" ] = NA
+
+No_Scenarios = out.df %>% group_by(Basin_name) %>% summarise(count = n())
+out.df = left_join(out.df,No_Scenarios)
+
+
+out.df$Basin_label[out.df$count == 2 & out.df$Type == "Existing_Proposed_total"] = 
+  out.df$Basin_name[out.df$count == 2 & out.df$Type == "Existing_Proposed_total"]
+#out.df$Basin_label[out.df$count == 2 & out.df$Type == "Existing_Proposed_total"] = NA
+
+out.df$Basin_label[out.df$count == 5 & out.df$Type == "SHPs"] = 
+  out.df$Basin_name[out.df$count == 5 & out.df$Type == "SHPs"]
+#out.df$Basin_label[out.df$count == 5 & out.df$Type == "Existing_Proposed_total"] = NA
+
+DCId = ggplot(out.df,aes(x=Type,y=DCId))+
+  geom_line(aes(group = Basin_name,color = Basin_name),size = 1.5)+
+  geom_point(size = 2)+
+  scale_x_discrete(labels=c("LargeDams" = "1.Existing \nLarge dams", 
+                            "SHPs" = "2.Existing \nSHPs",
+                            "Dewater" = "3.Existing SHPs \n+ dewatering",
+                            "Existing_total" = "4.Existing \ndams",
+                            "SHPs_new" = "5.Proposed \nSHPs",
+                            "Existing_Proposed_total" = "6.Existing \n+ proposed \ndams"))+ 
+  labs(x="Scenario")+guides(color="none")+  theme_bw() +
+  geom_text_repel(aes(label = Basin_label), size = 3.5,max.overlaps = Inf) +
+  theme(axis.text=element_text(size=10),
+        axis.title=element_text(size=10))
+
+#ggsave("E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity/Basins/DCId_line_graph_v2.jpg", width = 6, height = 4,scale = 2)
+
+getwd()
+
+
+
+
 
 
 

@@ -22,13 +22,12 @@ setwd("E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity/")
 
 shape_river = shape_basin = shape_SHPs = shape_SHPs_PH = shape_SHPs_new = shape_Large_dams = NULL
 
-
 #shape_river <- st_read("Nethravathi/Nethravathi_river.shp")
-shape_river <- st_read("Nethravathi/Nethravathi_river_V2.shp")
-shape_basin <- st_read("Nethravathi/Nethravathi_wshed.shp")
-shape_SHPs <- st_read("Nethravathi/Nethravathi_SHPs.shp")
-shape_SHPs_PH <- st_read("Nethravathi/Nethravathi_PH.shp")
-shape_SHPs_new <- st_read("Nethravathi/Nethravathi_SHPs_new.shp")
+#shape_river <- st_read("Nethravathi/Nethravathi_river_V2.shp")
+#shape_basin <- st_read("Nethravathi/Nethravathi_wshed.shp")
+#shape_SHPs <- st_read("Nethravathi/Nethravathi_SHPs.shp")
+#shape_SHPs_PH <- st_read("Nethravathi/Nethravathi_PH.shp")
+#shape_SHPs_new <- st_read("Nethravathi/Nethravathi_SHPs_new.shp")
 
 
 #shape_river <- st_read("Kaveri/Kaveri_river.shp")
@@ -41,12 +40,12 @@ shape_SHPs_new <- st_read("Nethravathi/Nethravathi_SHPs_new.shp")
 #shape_SHPs_new <- st_read("Kaveri/Kaveri_SHPs_new.shp")
 
 #shape_river <- st_read("Sharavathi/Sharavathi_river.shp") #confluences removed
-#shape_river <- st_read("Sharavathi/Sharavathi_river_v2.shp") #confluences removed
-#shape_basin <- st_read("Sharavathi/Sharavathi_wshed.shp")
-#shape_SHPs <- st_read("Sharavathi/Sharavathi_SHPs.shp")
-#shape_Large_dams <- st_read("Sharavathi/Sharavathi_LargeDams.shp")
-#shape_SHPs_PH <- st_read("Sharavathi/Sharavathi_PH.shp")
-#shape_SHPs_new <- st_read("Sharavathi/Sharavathi_SHPs_new.shp")
+shape_river <- st_read("Sharavathi/Sharavathi_river_v2.shp") #confluences removed
+shape_basin <- st_read("Sharavathi/Sharavathi_wshed.shp")
+shape_SHPs <- st_read("Sharavathi/Sharavathi_SHPs.shp")
+shape_Large_dams <- st_read("Sharavathi/Sharavathi_LargeDams.shp")
+shape_SHPs_PH <- st_read("Sharavathi/Sharavathi_PH.shp")
+shape_SHPs_new <- st_read("Sharavathi/Sharavathi_SHPs_new.shp")
 
 #shape_river <- st_read("Haladi/Haladi_river.shp")
 #shape_river <- st_read("Haladi/Haladi_river_v2.shp")
@@ -174,12 +173,15 @@ shape_SHPs_PH = shape_SHPs_PH[shape_SHPs_PH$Sitatued.o == "river" | shape_SHPs_P
 
 #combine with other large dams. Create a identified for large dams
 shape_Large_dams$Sitatued.o = "river_non_SHP"
+for(i in 1:nrow(shape_Large_dams)){
+  shape_Large_dams$Company[i] = shape_Large_dams$Comments[i] = paste0("Large Hydro_",i)
+}
 
 
 #shape_dams = bind_rows(list(shape_SHPs, shape_Large_dams))
 #shape_dams = bind_rows(list(shape_SHPs, shape_Large_dams,shape_SHPs_PH))
 #shape_dams = bind_rows(list(shape_SHPs, shape_SHPs_PH))
-shape_dams = shape_SHPs
+#shape_dams = shape_SHPs
 #shape_dams = shape_Large_dams
 
 nrow(shape_SHPs)
@@ -188,6 +190,7 @@ nrow(shape_SHPs_PH)
 nrow(shape_SHPs_new)
 
 names(shape_dams)
+nrow(shape_dams)
 
 #### shape files processing ####
 
@@ -361,7 +364,7 @@ Dam_loc = extract(dams_snapped_joined, geometry, into = c('Lon', 'Lat'), '\\((.*
 Dam_loc = data.frame(x = Dam_loc$Lon, y = Dam_loc$Lat)
 Dam_elevs = get_elev_point(locations =Dam_loc, units='meters', prj="EPSG:4326", src='aws')
 
-#dams_snapped_joined = dams_snapped_joined[which(Dam_elevs$elevation == min(Dam_elevs$elevation)),]
+dams_snapped_joined = dams_snapped_joined[which(Dam_elevs$elevation == min(Dam_elevs$elevation)),]
 
 
 #all the large dams
