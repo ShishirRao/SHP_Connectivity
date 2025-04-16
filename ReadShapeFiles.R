@@ -122,9 +122,11 @@ collate <- function(basin_vars, DCI_type){
     print(res3)
   }
   
-  # 
+  
   #if(!is.null(res1) & !is.null(res2) & !is.null(res3)){
-  if(!is.null(res1) & !is.null(res3)){ # if both small dams and large dams are present
+  # if both small dams and large dams are present, then for DCIp, combine the two datasets and recalculate DCI
+  # for DCId, existing total will be either the DCId of large dams or SHPs. 
+  if(!is.null(res1) & !is.null(res3)){
     shape_existing = bind_rows(list(shape_Large_dams,shape_SHPs,shape_SHPs_PH))
     print("No of dams = ")
     print(nrow(shape_existing))
@@ -132,7 +134,7 @@ collate <- function(basin_vars, DCI_type){
     res4 = index_calc_wrapper(basin_name,shape_river,shape_existing,shape_basin,"Existing_total",DCI_type)
     res4 = cbind(res4,type = "Existing_total")
     print(res4)
-  } else if(!is.null(res1) & is.null(res3)){
+  } else if(!is.null(res1) & is.null(res3)){ 
     shape_existing = shape_SHPs_PH
     shape_existing$Allotted.C = as.numeric(shape_existing$Allotted.C) # required for mering with new SHPs later
     if(basin_name != "Sharavathi"){
@@ -282,21 +284,6 @@ index_calc_wrapper <- function(name, shape_river, shape_dams, shape_basin,type,D
   
   headwaters_checking <- headwaters_dam(dams_snapped_joined, shape_river_simple)
   head(headwaters_checking$flag_headwater)
-  
-  #If index type is diadromous, then the first dam from the sea in the upstream direction matters
-  if (DCI_type == "DCId"){
-      print("No of dams snapped joined = ")
-      print(nrow(dams_snapped_joined))
-      # Identify the dam at the lowest elevation. This is for DCId
-      Dam_loc = extract(dams_snapped_joined, geometry, into = c('Lon', 'Lat'), '\\((.*),(.*)\\)', conv = T)
-      Dam_loc = data.frame(x = Dam_loc$Lon, y = Dam_loc$Lat)
-      Dam_elevs = get_elev_point(locations =Dam_loc, units='meters', prj="EPSG:4326", src='aws')
-      print(Dam_elevs)
-      dams_snapped_joined = dams_snapped_joined[which(Dam_elevs$elevation == min(Dam_elevs$elevation)),]
-      print("DCId")
-      print(type)
-      print(dams_snapped_joined)
-  }
 
   # Create junction point shapefile
   network_links <- rbind(
@@ -393,18 +380,28 @@ index_calc_wrapper <- function(name, shape_river, shape_dams, shape_basin,type,D
   lab_index <- list()
   letter_index <- list()
   
-  # 1: Symmetric Dendritic Connectivity Index (no biotic effects)
-  lab_index[[1]] <- "Symmetric DCI"
-  letter_index[[1]] <- "A"
-  index[[1]] <- index_calculation(graph = river_graph,
-                                  weight = "length",
-                                  c_ij_flag = TRUE,
-                                  B_ij_flag = FALSE,
-                                  index_type = "full",
-                                  index_mode = "from")
-  ?index_calculation
+  if(DCI_type == "DCIp"){
+    # 1: Symmetric Dendritic Connectivity Index (no biotic effects)
+    lab_index[[1]] <- "Symmetric DCI"
+    letter_index[[1]] <- "A"
+    index[[1]] <- index_calculation(graph = river_graph,
+                                    weight = "length",
+                                    c_ij_flag = TRUE,
+                                    B_ij_flag = FALSE,
+                                    index_type = "full",
+                                    index_mode = "from")
+  }else{ # for DCId
+    index[[1]] <- index_calculation(graph = river_graph,
+                                    weight = "length",
+                                    c_ij_flag = TRUE,
+                                    B_ij_flag = FALSE,
+                                    index_type = "reach", # chose reach scale
+                                    index_mode = "from")
+    index[[1]]= index[[1]][outlet,c(2,3,4)]
+  }
+
   
-  if(type == "Dewater" | type == "Existing_total"){
+  if(DCI_type == "DCIp" & (type == "Dewater" | type == "Existing_total")){
     edges = get.data.frame(river_graph, what = "edges")
     vertices = get.data.frame(river_graph, what = "vertices")
     
@@ -460,8 +457,8 @@ g_df
 # Potamodromous: within river connectivity
 #call function to loop through each basin calculating DCIp
 listofres = NULL
-#listofres = lapply(g,collate,"DCIp")
-listofres = lapply(g[24],collate,"DCIp")
+listofres = lapply(g,collate,"DCIp")
+#listofres = lapply(g[24],collate,"DCIp")
 #Tunga = NULL
 #Tunga = lapply(g[30],collate,"DCIp")
 out.df <- (do.call("rbind", listofres))
@@ -480,14 +477,15 @@ out.df$DCIp = out.df$DCIp*100
 listofres = NULL
 #call function to loop through each basin calculating DCId
 listofres = lapply(g,collate,"DCId")
-listofres = lapply(g[24],collate,"DCId")
+#listofres = lapply(g[24],collate,"DCId")
 out.df <- (do.call("rbind", listofres))
 out.df <- out.df %>% `rownames<-`(seq_len(nrow(out.df)))
 names(out.df) <- c("Basin_name","DCId","Type")
 out.df$DCId = out.df$DCId*100
 
-#save(out.df, file = "DCId.Rdata")
+#saveRDS(out.df, file = "DCId_corrected.rds")
 
+#save(out.df, file = "DCId.Rdata")
 #load("DCId.Rdata")
 
 
@@ -502,7 +500,7 @@ out.df$Direction[out.df$Basin_name == "Bhima" |
 
 #out.df$DCId[out.df$Direction == "East"] = NA
 
-out.df.wide = spread(out.df, key = Type, value = DCIp) #or DCId 
+#out.df.wide = spread(out.df, key = Type, value = DCIp) #or DCId 
 #out.df.wide = spread(out.df, key = Type, value = DCId) #or DCId 
 
 #For DCIp
@@ -525,6 +523,7 @@ range(out.df.wide$Existing_Proposed_total)
 
 #write.csv(out.df.wide, "E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity/Basins/DCId_v4.csv")
 #write.csv(out.df.wide, "E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity/Basins/DCId_v5.csv") #code changes for existing total
+#write.csv(out.df.wide, "E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity/Basins/DCId_v6.csv") #code change for DCId
 #write.csv(out.df.wide, "E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity/Basins/DCI_v7.csv")
 
 # prepare the output for display
@@ -541,6 +540,7 @@ wsheds$Basin_name = basin_names
 wsheds = left_join(wsheds,out.df.wide)
 #st_write(wsheds, "E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity/Basins/Results_DCI_v6.shp", delete_layer = TRUE)
 #st_write(wsheds, "E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity/Basins/Results_DCId_v1.shp", delete_layer = TRUE)
+#st_write(wsheds, "E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity/Basins/Results_DCId_v7.shp", delete_layer = TRUE)
 #write.csv(out.df, "E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity/Basins/DCI_v7.csv")
 
 
@@ -700,7 +700,8 @@ y = mean(out.df$DCIp[out.df$Direction == "East-flowing" & out.df$Type == "Existi
 
 
 #### DCId plot and summarries ####
-load("DCId.Rdata")
+out.df = readRDS("DCId_corrected.rds")
+#load("DCId.Rdata")
 
 
 out.df$Direction = "West"
@@ -753,7 +754,7 @@ DCId = ggplot(out.df,aes(x=Type,y=DCId))+
   theme(axis.text=element_text(size=10),
         axis.title=element_text(size=10))
 
-#ggsave("E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity/Basins/DCId_line_graph_v2.jpg", width = 6, height = 4,scale = 2)
+#ggsave("E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity/Basins/DCId_line_graph_v3.jpg", width = 6, height = 4,scale = 2)
 
 getwd()
 

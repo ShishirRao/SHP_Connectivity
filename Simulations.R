@@ -81,6 +81,8 @@ l2 = 0
 
 
 
+setwd("E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity/")
+
 #shape_river <- st_read("test/TestRiver.shp")
 shape_river <- st_read("test/TestRiver_split.shp")
 #shape_river <- st_read("test/TestRiver_split_v3.shp")
@@ -91,6 +93,8 @@ shape_dams <- st_read("test/TestPoints.shp")
 #Let us filter to just one dam
 shape_dams <- shape_dams[shape_dams$DamId =='A' | shape_dams$DamId =='B' | shape_dams$DamId =='D',]
 #shape_dams <- shape_dams[shape_dams$DamId =='A' | shape_dams$DamId =='D',]
+
+#shape_dams <- shape_dams[shape_dams$DamId =='D',]
 
 #shape_river <- shape_river[-23,]
 
@@ -329,7 +333,7 @@ ggplot() +
 
 #river_net_simplified$DIST_DN_KM[river_net_simplified$NodeID == 5] = 0
 
-#st_write(river_net_simplified, "test/river_net_simplified5.shp")
+#st_write(river_net_simplified, "test/river_net_simplified6.shp")
 
 
 #outlet <- get_outlet(river_net_simplified, shape_basin, distance = 1)
@@ -376,6 +380,31 @@ index[[1]] <- index_calculation(graph = river_graph,
                                 B_ij_flag = FALSE,
                                 index_type = "full",
                                 index_mode = "from")
+
+?index_calculation
+
+
+index[[1]] <- index_calculation(graph = river_graph,
+                                weight = "length",
+                                c_ij_flag = TRUE,
+                                B_ij_flag = FALSE,
+                                index_type = "reach",
+                                index_mode = "from")
+class(index[[1]])
+
+index[[1]][outlet,c(2,3,4)]
+
+
+#as.numeric(river_net_simplified$length[outlet]) / sum(as.numeric(river_net_simplified$length))
+
+
+index[[1]] <- index_calculation(graph = river_graph,
+                                weight = "length",
+                                c_ij_flag = TRUE,
+                                B_ij_flag = FALSE,
+                                index_type = "full",
+                                index_mode = "from")
+
 
 
 edges = get.data.frame(river_graph, what = "edges")
@@ -691,3 +720,20 @@ river_net_simplified[river_net_simplified$NodeID == free_trib,]
 st_join(river_net_simplified[river_net_simplified$NodeID == free_trib,], shape_river, join = st_is_within_distance, dist = 10 )
 
 
+
+
+
+#If index type is diadromous, then the first dam from the sea in the upstream direction matters
+if (DCI_type == "DCId"){
+  print("No of dams snapped joined = ")
+  print(nrow(dams_snapped_joined))
+  # Identify the dam at the lowest elevation. This is for DCId
+  Dam_loc = extract(dams_snapped_joined, geometry, into = c('Lon', 'Lat'), '\\((.*),(.*)\\)', conv = T)
+  Dam_loc = data.frame(x = Dam_loc$Lon, y = Dam_loc$Lat)
+  Dam_elevs = get_elev_point(locations =Dam_loc, units='meters', prj="EPSG:4326", src='aws')
+  print(Dam_elevs)
+  dams_snapped_joined = dams_snapped_joined[which(Dam_elevs$elevation == min(Dam_elevs$elevation)),]
+  print("DCId")
+  print(type)
+  print(dams_snapped_joined)
+}
