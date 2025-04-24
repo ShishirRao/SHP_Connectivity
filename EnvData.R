@@ -55,4 +55,14 @@ elev = read.csv("GoogleEE/Kar_basins_medianElev.csv",header=T)
 head(elev)
 names(elev) = c("Basn_nm", "Max_elev_m", "Min_elev_m")
 
+elev$Min_elev_m[elev$Min_elev_m<0] = 0  
+
 AvgAnnualPrecip2 = left_join(AvgAnnualPrecip2,elev)
+names(AvgAnnualPrecip2)
+
+
+
+### execute the dam elevs code 
+dam_table = left_join(AvgAnnualPrecip2,dam_elev_wide)
+
+write.csv(dam_table,"E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity/Basins/dam_table_1.csv")

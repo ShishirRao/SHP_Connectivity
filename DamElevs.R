@@ -267,14 +267,47 @@ dam_elev$range = stri_paste(dam_elev$dam_elev_max,' ','-',' ',dam_elev$dam_elev_
 dam_elev = dam_elev %>% select(Basn_nm,type,status,n,range)
 names(dam_elev)
 
+# Spread the number of dams column
+#Duplicate columns for spreading
+dam_elev$Type = dam_elev$type
+dam_elev$Status = dam_elev$status
+
 dam_elev_wide = dam_elev %>% spread(key = type, value = n)
 dam_elev_wide$large[is.na(dam_elev_wide$large)] = "-"
 dam_elev_wide$small[is.na(dam_elev_wide$small)] = "-"
-dam_elev_wide$no_dams_large_small = stri_paste(dam_elev_wide$large, ' , ', dam_elev_wide$small) 
-names(dam_elev_wide)
-dam_elev_wide = dam_elev_wide %>% select(Basn_nm,status,range,no_dams_large_small)
 
-dam_elev_wide = left_join(dam_elev_wide,dam_elev %>% select(Basn_nm,type,status))
+dam_elev_wide = dam_elev_wide %>% spread(key = status, value = large)
+dam_elev_wide$status = dam_elev_wide$Status
+names(dam_elev_wide) = c("Basn_nm","range","Type","Status","small","large_existing","large_proposed","status")
+
+dam_elev_wide = dam_elev_wide %>% spread(key = status, value = small)
+names(dam_elev_wide) = c("Basn_nm","range","Type","Status","large_existing","large_proposed","small_existing","small_proposed")
+
+# now spread the range of elevation
+dam_elev_wide$type = dam_elev_wide$Type
+dam_elev_wide$status = dam_elev_wide$Status
+
+dam_elev_wide = dam_elev_wide %>% spread(key = type, value = range)
+dam_elev_wide$large[is.na(dam_elev_wide$large)] = "-"
+dam_elev_wide$small[is.na(dam_elev_wide$small)] = "-"
+
+dam_elev_wide = dam_elev_wide %>% spread(key = status, value = large)
+dam_elev_wide$status = dam_elev_wide$Status
+names(dam_elev_wide) = c("Basn_nm","Type","Status","large_existing_dams_no","large_proposed_dams_no",
+                         "small_existing_dams_no","small_proposed_dams_no","small",
+                         "large_existing_elev_range","large_proposed_elev_range", "status")
+
+dam_elev_wide = dam_elev_wide %>% spread(key = status, value = small)
+names(dam_elev_wide) = c("Basn_nm","Type","Status","large_existing_dams_no","large_proposed_dams_no",
+                         "small_existing_dams_no","small_proposed_dams_no",
+                         "large_existing_elev_range","large_proposed_elev_range",
+                         "small_existing_elev_range","small_proposed_elev_range")
+
+
+dam_elev_wide = dam_elev_wide %>% select(-Type,-Status)
+
+
+
 
 
                         
