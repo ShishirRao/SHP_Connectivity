@@ -21,6 +21,7 @@ library(rlist)
 library(directlabels)
 library(sf)
 library(terra)
+library(data.table)
 
 setwd("E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity/ShapeFiles/")
 
@@ -225,7 +226,7 @@ elev_calc_wrapper <- function(name, shape_river, shape_dams, shape_basin){
   dams_snapped_joined$Basn_nm = name
   dams_snapped_joined = cbind(dams_snapped_joined,Dam_elevs)
   names(dams_snapped_joined)
-  dams_snapped_joined = dams_snapped_joined %>% dplyr::select(Basn_nm,Company,type,status,Sitatued.o,elevation,elev_units,geometry)
+  dams_snapped_joined = dams_snapped_joined %>% dplyr::select(Basn_nm,Company,type,status,Sitatued.o,elevation,elev_units)
   return(dams_snapped_joined)
 }
 
@@ -251,13 +252,32 @@ out.df <- out.df %>% `rownames<-`(seq_len(nrow(out.df)))
 #out.df = readRDS("dam_elev.rds")
 out.df$type[out.df$Sitatued.o == "part of bigger project"] = "large"
 
+out.df = as.data.frame(out.df)
+
+class(out.df)
 names(out.df)
+
 dam_elev = out.df %>% dplyr::group_by(Basn_nm,type,status) %>% 
           dplyr::summarize(dam_elev_max = max(elevation, na.rm=TRUE),
                            dam_elev_min = min(elevation, na.rm=TRUE),
                            n = n())
+
+dam_elev$range = stri_paste(dam_elev$dam_elev_max,' ','-',' ',dam_elev$dam_elev_min)
+
+dam_elev = dam_elev %>% select(Basn_nm,type,status,n,range)
+names(dam_elev)
+
+dam_elev_wide = dam_elev %>% spread(key = type, value = n)
+dam_elev_wide$large[is.na(dam_elev_wide$large)] = "-"
+dam_elev_wide$small[is.na(dam_elev_wide$small)] = "-"
+dam_elev_wide$no_dams_large_small = stri_paste(dam_elev_wide$large, ' , ', dam_elev_wide$small) 
+names(dam_elev_wide)
+dam_elev_wide = dam_elev_wide %>% select(Basn_nm,status,range,no_dams_large_small)
+
+dam_elev_wide = left_join(dam_elev_wide,dam_elev %>% select(Basn_nm,type,status))
+
+
                         
 
-?minmax
 
 
