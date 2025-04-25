@@ -254,58 +254,53 @@ out.df$type[out.df$Sitatued.o == "part of bigger project"] = "large"
 
 out.df = as.data.frame(out.df)
 
-class(out.df)
-names(out.df)
-
 dam_elev = out.df %>% dplyr::group_by(Basn_nm,type,status) %>% 
           dplyr::summarize(dam_elev_max = max(elevation, na.rm=TRUE),
-                           dam_elev_min = min(elevation, na.rm=TRUE),
-                           n = n())
+                           dam_elev_min = min(elevation, na.rm=TRUE))
+
+dam_no = out.df %>% dplyr::group_by(Basn_nm,type,status) %>% 
+  dplyr::summarize(n = n())
 
 dam_elev$range = stri_paste(dam_elev$dam_elev_max,' ','-',' ',dam_elev$dam_elev_min)
 
-dam_elev = dam_elev %>% select(Basn_nm,type,status,n,range)
+dam_elev = dam_elev %>% select(Basn_nm,type,status,range)
 names(dam_elev)
 
-# Spread the number of dams column
-#Duplicate columns for spreading
-dam_elev$Type = dam_elev$type
-dam_elev$Status = dam_elev$status
-
-dam_elev_wide = dam_elev %>% spread(key = type, value = n)
+dam_elev_wide = NULL
+dam_elev_wide = dam_elev %>% spread(key = type, value = range)
 dam_elev_wide$large[is.na(dam_elev_wide$large)] = "-"
 dam_elev_wide$small[is.na(dam_elev_wide$small)] = "-"
 
+dam_elev_wide$Status = dam_elev_wide$status
 dam_elev_wide = dam_elev_wide %>% spread(key = status, value = large)
-dam_elev_wide$status = dam_elev_wide$Status
-names(dam_elev_wide) = c("Basn_nm","range","Type","Status","small","large_existing","large_proposed","status")
 
-dam_elev_wide = dam_elev_wide %>% spread(key = status, value = small)
-names(dam_elev_wide) = c("Basn_nm","range","Type","Status","large_existing","large_proposed","small_existing","small_proposed")
+names(dam_elev_wide) = c("Basn_nm","small","Status","large_existing_elev_range","large_proposed_elev_range")
 
-# now spread the range of elevation
-dam_elev_wide$type = dam_elev_wide$Type
-dam_elev_wide$status = dam_elev_wide$Status
-
-dam_elev_wide = dam_elev_wide %>% spread(key = type, value = range)
-dam_elev_wide$large[is.na(dam_elev_wide$large)] = "-"
-dam_elev_wide$small[is.na(dam_elev_wide$small)] = "-"
-
-dam_elev_wide = dam_elev_wide %>% spread(key = status, value = large)
-dam_elev_wide$status = dam_elev_wide$Status
-names(dam_elev_wide) = c("Basn_nm","Type","Status","large_existing_dams_no","large_proposed_dams_no",
-                         "small_existing_dams_no","small_proposed_dams_no","small",
-                         "large_existing_elev_range","large_proposed_elev_range", "status")
-
-dam_elev_wide = dam_elev_wide %>% spread(key = status, value = small)
-names(dam_elev_wide) = c("Basn_nm","Type","Status","large_existing_dams_no","large_proposed_dams_no",
-                         "small_existing_dams_no","small_proposed_dams_no",
-                         "large_existing_elev_range","large_proposed_elev_range",
+dam_elev_wide = dam_elev_wide %>% spread(key = Status, value = small)
+names(dam_elev_wide) = c("Basn_nm","large_existing_elev_range","large_proposed_elev_range",
                          "small_existing_elev_range","small_proposed_elev_range")
 
+dam_elev_wide = dam_elev_wide %>% gather(var, val, large_existing_elev_range:small_proposed_elev_range) %>%  filter(!is.na(val)) %>% 
+                spread(key = var, value = val)
 
-dam_elev_wide = dam_elev_wide %>% select(-Type,-Status)
+#### now deal with number of dams
+dam_no_wide = dam_no %>% spread(key = type, value = n)
+names(dam_no_wide)
+dam_no_wide$Status = dam_no_wide$status
 
+dam_no_wide = dam_no_wide %>% spread(key = status, value = large)
+names(dam_no_wide) = c("Basn_nm","small","Status","large_existing_no","large_proposed_no")
+
+dam_no_wide = dam_no_wide %>% spread(key = Status, value = small)
+names(dam_no_wide) = c("Basn_nm","large_existing_no","large_proposed_no","small_existing_no","small_proposed_no")
+
+dam_no_wide = dam_no_wide %>% gather(var, val, large_existing_no:small_proposed_no) %>%  filter(!is.na(val)) %>% 
+  spread(key = var, value = val)
+
+class(dam_elev_wide$small_proposed_elev_range)
+
+##############
+#Combine dam elevation and dam number data
 
 
 

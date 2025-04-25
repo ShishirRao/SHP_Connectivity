@@ -61,8 +61,24 @@ AvgAnnualPrecip2 = left_join(AvgAnnualPrecip2,elev)
 names(AvgAnnualPrecip2)
 
 
+### execute the dam elevs code and then merge the two datasets here
+dam_table = left_join(AvgAnnualPrecip2,dam_summary)
 
-### execute the dam elevs code 
-dam_table = left_join(AvgAnnualPrecip2,dam_elev_wide)
+dam_table$Direction = "West"
+dam_table$Direction[dam_table$Basn_nm == "Bhima" |
+                      dam_table$Basn_nm == "Kaveri" |
+                      dam_table$Basn_nm == "Krishna" |
+                      dam_table$Basn_nm == "Tunga" |
+                      dam_table$Basn_nm == "Palar" |
+                      dam_table$Basn_nm == "NorthPennar" |
+                      dam_table$Basn_nm == "SouthPennar"] = "East"
 
-write.csv(dam_table,"E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity/Basins/dam_table_1.csv")
+dam_table[is.na(dam_table)] = "-"
+
+
+dam_table_east = dam_table[dam_table$Direction == "East",]
+
+
+
+write.csv(,"E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity/Basins/dam_table_east_3.csv")
+
