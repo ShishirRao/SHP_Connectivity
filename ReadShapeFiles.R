@@ -477,16 +477,16 @@ out.df$DCIp = out.df$DCIp*100
 listofres = NULL
 #call function to loop through each basin calculating DCId
 listofres = lapply(g,collate,"DCId")
-#listofres = lapply(g[24],collate,"DCId")
+#listofres = lapply(g[2],collate,"DCId")
 out.df <- (do.call("rbind", listofres))
 out.df <- out.df %>% `rownames<-`(seq_len(nrow(out.df)))
 names(out.df) <- c("Basin_name","DCId","Type")
 out.df$DCId = out.df$DCId*100
 
 #saveRDS(out.df, file = "DCId_corrected.rds")
-
 #save(out.df, file = "DCId.Rdata")
 #load("DCId.Rdata")
+#out.df = readRDS("DCId_corrected.rds")
 
 
 out.df$Direction = "West"
@@ -506,7 +506,7 @@ out.df$Direction[out.df$Basin_name == "Bhima" |
 #For DCIp
 #out.df.wide[is.na(out.df.wide)] <- 100
 
-#For DCIp
+#For DCId
 out.df.wide[is.na(out.df.wide) & out.df.wide$Direction == "West"] <- 100
 
 
@@ -525,6 +525,8 @@ range(out.df.wide$Existing_Proposed_total)
 #write.csv(out.df.wide, "E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity/Basins/DCId_v5.csv") #code changes for existing total
 #write.csv(out.df.wide, "E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity/Basins/DCId_v6.csv") #code change for DCId
 #write.csv(out.df.wide, "E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity/Basins/DCI_v7.csv")
+#write.csv(out.df.wide, "E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity/Basins/DCId_v7.csv")
+
 
 # prepare the output for display
 #read only the wsheds
@@ -541,6 +543,7 @@ wsheds = left_join(wsheds,out.df.wide)
 #st_write(wsheds, "E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity/Basins/Results_DCI_v6.shp", delete_layer = TRUE)
 #st_write(wsheds, "E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity/Basins/Results_DCId_v1.shp", delete_layer = TRUE)
 #st_write(wsheds, "E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity/Basins/Results_DCId_v7.shp", delete_layer = TRUE)
+#st_write(wsheds, "E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity/Basins/Results_DCId_v8.shp", delete_layer = TRUE)
 #write.csv(out.df, "E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity/Basins/DCI_v7.csv")
 
 
@@ -757,6 +760,9 @@ DCId = ggplot(out.df,aes(x=Type,y=DCId))+
 #ggsave("E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity/Basins/DCId_line_graph_v3.jpg", width = 6, height = 4,scale = 2)
 
 getwd()
+
+
+
 
 
 

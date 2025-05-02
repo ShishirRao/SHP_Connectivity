@@ -22,6 +22,13 @@ library(directlabels)
 library(sf)
 library(terra)
 library(data.table)
+library(dplyr)
+library(tidyr)
+library(stringr)
+library(lubridate)
+library(stringi)
+library("sp")
+library(data.table)
 
 setwd("E:/Shishir/FieldData/Analysis/Connectivity/SHP_Connectivity/ShapeFiles/")
 
@@ -283,6 +290,9 @@ names(dam_elev_wide) = c("Basn_nm","large_existing_elev_range","large_proposed_e
 dam_elev_wide = dam_elev_wide %>% gather(var, val, large_existing_elev_range:small_proposed_elev_range) %>%  filter(!is.na(val)) %>% 
                 spread(key = var, value = val)
 
+
+dam_elev_wide[is.na(dam_elev_wide)] = "-"
+
 #### now deal with number of dams
 dam_no_wide = dam_no %>% spread(key = type, value = n)
 names(dam_no_wide)
@@ -299,11 +309,17 @@ dam_no_wide = dam_no_wide %>% gather(var, val, large_existing_no:small_proposed_
 
 class(dam_elev_wide$small_proposed_elev_range)
 
+dam_no_wide$large_existing_no = as.character(dam_no_wide$large_existing_no)
+dam_no_wide$small_existing_no = as.character(dam_no_wide$small_existing_no)
+dam_no_wide$small_proposed_no = as.character(dam_no_wide$small_proposed_no)
+
+dam_no_wide[is.na(dam_no_wide)] = "-"
+
 ##############
 #Combine dam elevation and dam number data
 
 
-
+dam_summary = left_join(dam_elev_wide,dam_no_wide)
 
                         
 
